@@ -1,5 +1,7 @@
 # REVIVE — Research and engineering choices
 
+For the expanded design investigation see [UX_STUDY.md](UX_STUDY.md), [MULTIPLAYER_PLAN.md](MULTIPLAYER_PLAN.md), [DEPLOYMENT.md](DEPLOYMENT.md) and [TEST_MATRIX.md](TEST_MATRIX.md).
+
 Date reviewed: October 10, 2026. These are public sources and architecture references, not access to competitors' internal repositories or executables. Original starter code is independently authored.
 
 ## What competing launchers teach us
@@ -35,7 +37,7 @@ The official [Heroic source](https://github.com/Heroic-Games-Launcher/HeroicGame
 
 - **Desktop**: Electron/Node shell running a restricted local HTML/JS interface. Separate main/preload renderer; renderer cannot directly use Node or game-file APIs. Local Game Manager stores entries in app UserData; only chosen paths are imported.
 - **Library scan**: read-only file inventory, executable SHA-256. No code execution during scan, binary editing, or auto-download of patches.
-- **Saves**: local gzip-format snapshots, backup-before-restore and path validation. Optional HTTPS WebDAV latest snapshot in the owner's account. v0.1 remote backups are not end-to-end encrypted beyond WebDAV HTTPS and provider storage controls. A future version should add authenticated encryption with user-held recovery key.
+- **Saves**: local gzip-format snapshots, backup-before-restore and path validation. Optional HTTPS WebDAV latest snapshot in the owner's account. v0.2 remote backups are not end-to-end encrypted beyond WebDAV HTTPS and provider storage controls. A future version should add authenticated encryption with user-held recovery key.
 - **AI**: Vercel server contains OpenAI secret; desktop submits capped inventory summaries with owner-token auth. AI may advise, not patch automatically.
 - **Game downloads**: private owner-only authorized distribution module is a future possibility. "Delisted" does not imply public domain. Build legal permission checks per title and avoid generic redistribution of protected files.
 - **Multiplayer**: lobbies/auth/chat are separate from actual game packet transport. Legacy games need compatible LAN virtualization, protocol bridges, or permitted replacement servers independently.

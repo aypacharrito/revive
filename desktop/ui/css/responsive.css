@@ -1,0 +1,63 @@
+@media(max-width:1270px){.app{grid-template-columns:215px minmax(0,1fr)}
+.sidebar{padding-left:12px;padding-right:12px}
+.content{padding:31px 28px 55px}
+.topbar,.statusbar{padding-left:28px;padding-right:28px}
+.stat-tile{gap:9px;padding:15px}
+.stat-tile strong{font-size:21px}
+.stat-symbol{width:33px;height:33px}
+.game-lower{grid-template-columns:1fr 240px}
+}
+
+@media(max-width:1050px){.app{grid-template-columns:75px minmax(0,1fr)}
+.sidebar{padding:28px 10px 18px}
+.brand{justify-content:center;margin:12px 0 45px}
+.brand-name,.nav-label,.navtext,.navlink kbd,.nav-dot,.system-card,.sidebar-footer{display:none!important}
+.navlink{justify-content:center;padding:13px 0}
+.navlink .navicon{width:25px}
+.nav-indicator{position:absolute;right:4px;top:3px}
+.navgroup{margin-bottom:15px}
+.navgroup.tools{margin-top:15px;border-top:1px solid #292c3b;padding-top:15px}
+.sidebar-lower{display:none}
+.spotlight-scene{right:3%;width:33%}
+.spotlight-copy{width:68%}
+.game-grid{grid-template-columns:repeat(auto-fill,minmax(155px,1fr))}
+.stat-tile small{font-size:7px}
+}
+
+@media(max-width:830px){.top-search{min-width:35px}
+.top-search>span:nth-child(2),.top-search kbd,.owner-chip>span:nth-child(2){display:none}
+.topbar{min-height:55px}
+.content{padding:23px 18px 55px}
+.page-title{align-items:flex-start;flex-direction:column}
+.spotlight{min-height:250px}
+.spotlight-copy{width:100%;padding:29px}
+.spotlight-scene{opacity:.2;right:4%;width:40%}
+.spotlight h2{font-size:38px}
+.stat-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+.library-toolbar{align-items:stretch;flex-direction:column}
+.library-controls{justify-content:space-between}
+.game-lower,.settings-grid{grid-template-columns:1fr}
+.game-hero{height:300px}
+.multi-banner,.lab-hero{align-items:flex-start;flex-direction:column}
+.under-construction{margin:0}
+.multi-feature-grid{grid-template-columns:1fr}
+.quick-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.game-info-strip{grid-template-columns:repeat(2,1fr);gap:20px}
+.game-info-strip>div:nth-child(even){border-right:0}
+.game-info-strip>div{padding:0}
+}
+
+@media(max-width:580px){.statusbar{font-size:8px;gap:10px}
+.statusbar>span:last-child{display:none}
+.quick-grid{grid-template-columns:1fr}
+.download-fields{grid-template-columns:1fr}
+.download-fields .span2{grid-column:auto}
+.download-hero,.saves-banner{align-items:flex-start}
+.download-live{display:none}
+.form-footer{align-items:flex-start;flex-direction:column}
+.library-tabs{gap:9px}
+.game-hero-overlay{padding:25px}
+.game-hero-heading h1{font-size:40px}
+.spotlight-actions .btn{font-size:10px}
+}
+

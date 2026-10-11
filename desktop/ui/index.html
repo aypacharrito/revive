@@ -1,18 +1,28 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'none'; object-src 'none'"><title>REVIVE · Reclaim your library</title><link rel="stylesheet" href="styles.css"></head>
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'"><title>REVIVE — Keep play alive</title><link rel="stylesheet" href="styles.css"></head>
 <body>
-<div class="app">
-  <aside class="sidebar">
-    <div class="logo"><div class="mark">R<span>✦</span></div><div><strong>REVIVE</strong><small>YOUR GAMES. YOUR WORLD.</small></div></div>
-    <div class="nav-label">YOUR SPACE</div>
-    <nav id="nav"><button class="nav-button active" data-view="library"><span>◈</span> Library</button><button class="nav-button" data-view="saves"><span>☁</span> Cloud &amp; Saves</button><button class="nav-button" data-view="diagnostics"><span>✳</span> Diagnostics</button><button class="nav-button" data-view="settings"><span>⚙</span> Settings</button></nav>
-    <div class="sidebar-bottom"><div class="server-status"><i></i> LOCAL LIBRARY <span>READY</span></div><div class="privacy">Your game files never leave your PC. Only save archives you choose are synced to your storage.</div></div>
-  </aside>
-  <main class="main">
-    <header class="topbar"><div class="crumb">PERSONAL COLLECTION <span>/</span> <strong id="pageLabel">LIBRARY</strong></div><div class="toolbar"><span class="owner"><span class="avatar">R</span> OWNER MODE</span><button class="icon-btn" data-view="settings" title="Settings">⚙</button></div></header>
-    <div id="content" class="content"></div>
-  </main>
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <div id="modal" class="modal-layer hidden" aria-modal="true" role="dialog"></div>
-</div>
-<script src="app.js"></script>
+<div id="boot" class="boot-screen" aria-hidden="true"><div class="boot-emblem"><span>R</span><i></i></div><div class="boot-word">REVIVE</div><div class="boot-tag">KEEP PLAY ALIVE</div><div class="boot-line"><span></span></div></div>
+<div class="app" id="app">
+ <aside class="sidebar">
+  <div class="brand"><div class="brand-icon">R<span>✦</span></div><div class="brand-name"><strong>REVIVE</strong><small>KEEP PLAY ALIVE</small></div></div>
+  <div class="navgroup"><p class="nav-label">YOUR SPACE</p><nav aria-label="Main navigation">
+    <button class="navlink active" data-view="library" title="Library"><span class="navicon" data-icon="grid"></span><span class="navtext">Library</span><kbd>⌘1</kbd></button>
+    <button class="navlink" data-view="catalog" title="Cloud library"><span class="navicon" data-icon="cloud"></span><span class="navtext">Cloud library</span></button>
+    <button class="navlink" data-view="consoles" title="Consoles"><span class="navicon" data-icon="gamepad"></span><span class="navtext">Consoles</span></button>
+    <button class="navlink" data-view="friends" title="Friends & chat"><span class="navicon" data-icon="users"></span><span class="navtext">Friends & chat</span></button>
+    <button class="navlink" data-view="multiplayer" title="Multiplayer"><span class="navicon" data-icon="users"></span><span class="navtext">Multiplayer</span><span class="nav-dot"></span></button>
+    <button class="navlink" data-view="downloads" title="Downloads"><span class="navicon" data-icon="download"></span><span class="navtext">Downloads</span><span class="nav-indicator" id="downloadCount"></span></button>
+    <button class="navlink" data-view="saves" title="Cloud saves"><span class="navicon" data-icon="cloud"></span><span class="navtext">Cloud saves</span></button>
+  </nav></div>
+  <div class="navgroup tools"><p class="nav-label">TOOLS</p><nav aria-label="Tools"><button class="navlink" data-view="support"><span class="navicon" data-icon="star"></span><span class="navtext">Support REVIVE</span></button><button class="navlink" data-view="diagnostics"><span class="navicon" data-icon="sparkles"></span><span class="navtext">AI Lab</span></button><button class="navlink" data-view="settings"><span class="navicon" data-icon="settings"></span><span class="navtext">Settings</span></button></nav></div>
+  <div class="sidebar-lower"><div class="system-card"><div class="system-orbit"><span></span></div><div><strong>LOCAL MODE</strong><small>Your games stay yours</small></div><span class="system-led"></span></div><div class="sidebar-footer"><span class="footer-star">✦</span><span>Built for games worth saving.</span></div></div>
+ </aside>
+ <section class="workspace"><div class="window-drag" aria-hidden="true"></div>
+  <header class="topbar"><div class="breadcrumb"><span>YOUR WORLD</span><span class="crumb-separator">/</span><strong id="pageLabel">LIBRARY</strong></div><div class="top-actions"><button id="globalSearch" class="top-search" data-action="focus-search" aria-label="Search games"><span data-icon="search"></span><span>Search your games</span><kbd>Ctrl K</kbd></button><span class="header-divider"></span><button class="owner-chip" data-view="friends" title="Friends and chat"><span class="owner-avatar">R</span><span>FRIENDS & CHAT</span></button></div></header>
+  <main id="content" class="content" tabindex="-1"></main>
+  <footer class="statusbar"><span><span class="connected-dot"></span><span id="connectionText">YOUR LIBRARY IS READY</span></span><span id="footerInfo">REVIVE 0.4.0 · PRIVATE PREVIEW</span></footer>
+ </section>
+ <div id="updateDock" aria-live="polite"></div>
+ <div id="toast-stack" aria-live="polite" aria-atomic="true"></div><div id="modal" class="modal-layer hidden" role="dialog" aria-modal="true"></div>
+</div><script type="module" src="modules/app.mjs"></script>
 </body></html>

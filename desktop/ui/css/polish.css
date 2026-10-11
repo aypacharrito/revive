@@ -1,0 +1,11 @@
+/* Visual pass for dense PC libraries: calm inputs, large readable controls, smooth but restrained motion. */
+:root{--bg:#0c1019;--line:#262d3a;--line-strong:#344051;--text:#edf2f9;--quiet:#8d9ba9}
+.app{background:#0a1019}.sidebar{background:linear-gradient(175deg,#111827,#0b111a 80%)}.workspace{background:radial-gradient(ellipse 55% 30% at 80% 8%,#243e4a3b,transparent),linear-gradient(120deg,#111723,#0e1521 65%,#101620)}
+.navlink{font-size:13px;letter-spacing:.04px;min-height:44px;padding-top:11px;padding-bottom:11px}.navlink.active{background:linear-gradient(90deg,#33465a99,#1b2a3699);border-color:#53698555}.navlink:hover{color:#fff;background:#2634437a}.navlink.active:before{background:#95cde8;box-shadow:0 0 12px #62c8e68c}
+.topbar{min-height:70px}.top-search{min-height:36px;min-width:225px;border-color:#344354;color:#a2b5c2}.top-search:hover{border-color:#537791}.owner-chip{font-size:11px}
+.page-title h1{font-size:clamp(35px,3.2vw,51px);font-weight:850;letter-spacing:-.04em}.page-sub{font-size:14px;color:#a3adbc}.section-heading h2{font-size:25px}.stat-tile strong{font-size:25px}.stat-tile small{font-size:10px;letter-spacing:.4px}
+.btn{font-size:13px;min-height:42px;border-radius:9px}.btn:active{filter:brightness(.95)}.btn.primary{background:linear-gradient(125deg,#d1bcff,#a6a9ff)}.btn.primary:hover{background:linear-gradient(125deg,#e2d0ff,#bcc4ff)}.game-card:hover{transform:translateY(-3px);border-color:#89b4d9;box-shadow:0 15px 40px #0007}.game-card:active{transform:translateY(-1px) scale(.99)}
+.game-name{font-size:15px}.game-last{font-size:12px}.spotlight{min-height:266px}.spotlight p{font-size:13px}.tab{font-size:12px}.library-search input{font-size:13px}.library-search{min-width:225px}.sort-wrap select{font-size:12px}
+label input,textarea,select{transition:background-color .15s,border-color .15s;color:#eaf4fc}label input:focus,.library-search input:focus,.sort-wrap select:focus{outline:0!important;box-shadow:none!important}label:focus-within{color:#e6ecf4}.sort-wrap:focus-within,.library-search:focus-within{box-shadow:none!important;outline:0!important}
+.panel p{font-size:13px}.empty-state p{font-size:13px}.empty-state{padding:45px 24px}.small-caption,.nav-label{font-size:10px}.statusbar{font-size:10px}
+@media (prefers-reduced-motion:reduce){.game-card,.btn,.navlink{transition:none!important;transform:none!important}}

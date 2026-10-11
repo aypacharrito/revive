@@ -1,0 +1,28 @@
+name: Windows launcher build
+on:
+  workflow_dispatch:
+  push:
+    paths: ['desktop/**', '.github/workflows/windows-build.yml']
+permissions:
+  contents: read
+jobs:
+  test-and-build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+        working-directory: desktop
+      - run: npm test
+        working-directory: desktop
+      - run: npm run dist:win
+        working-directory: desktop
+      - uses: actions/upload-artifact@v4
+        with:
+          name: REVIVE-Windows-installer
+          path: desktop/dist/*.exe
+          retention-days: 14

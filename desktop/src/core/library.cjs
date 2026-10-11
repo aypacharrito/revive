@@ -28,7 +28,10 @@ function importExecutable(file, games) {
   if (!fs.statSync(real).isFile()) throw new Error('The selected executable is not a regular file.');
   const existing = games.find(g => g.exe.toLowerCase() === real.toLowerCase());
   if (existing) return { games, game: existing, existed: true };
-  const game = { id: crypto.randomUUID(), title: titleFromExe(real), exe: real, root: path.dirname(real), saveDir: null, addedAt: new Date().toISOString(), minutes: 0 };
+  const lookup = `${path.basename(real)} ${path.basename(path.dirname(real))}`.toLowerCase();
+  const knownName = /sunset[ _-]?overdrive/.test(lookup) ? 'Sunset Overdrive' : /\bblur\b/.test(lookup) ? 'Blur' : null;
+  const title = knownName || titleFromExe(real);
+  const game = { id: crypto.randomUUID(), title, compatibilityId: knownName?.toLowerCase() || null, exe: real, root: path.dirname(real), saveDir: null, addedAt: new Date().toISOString(), minutes: 0 };
   return { games: [game, ...games], game, existed: false };
 }
 function candidateExecutables(folder, depthLimit = 3) {

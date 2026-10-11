@@ -1,13 +1,14 @@
 {
   "name": "revive-desktop",
-  "version": "0.1.0",
+  "version": "0.7.0",
   "private": true,
-  "description": "Private launcher for existing PC game installations and save backups",
+  "description": "REVIVE launcher, GitHub Desktop importing, cloud connection guide, private Supabase friends and Upstash presence",
   "main": "src/main.cjs",
   "scripts": {
     "start": "electron .",
     "test": "node --test tests/*.test.cjs",
-    "dist:win": "electron-builder --win nsis --x64"
+    "dist:win": "electron-builder --win nsis --x64 --publish never",
+    "check": "node --check src/main.cjs && node --check src/preload.cjs && node --test tests/*.test.cjs"
   },
   "devDependencies": {
     "electron": "^37.0.0",
@@ -16,9 +17,38 @@
   "build": {
     "appId": "com.revive.arcade",
     "productName": "REVIVE",
-    "directories": { "output": "dist" },
-    "files": ["src/**/*", "ui/**/*", "package.json"],
-    "win": { "target": ["nsis"] },
-    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true }
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "ui/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "artifactName": "REVIVE-Setup-${version}.${ext}",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "aypacharrito",
+        "repo": "revive",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.10"
   }
 }

@@ -1,0 +1,11 @@
+const test=require('node:test');const assert=require('node:assert/strict');
+const fs=require('node:fs');const path=require('node:path');
+const {catalogOrigin,supportLink,validateCatalogResponse}=require('../src/core/catalog.cjs');
+const {validateDownload}=require('../src/core/verified-download.cjs');
+test('catalog URL is a clean HTTPS origin',()=>{assert.equal(catalogOrigin('https://revive.example'),'https://revive.example');assert.throws(()=>catalogOrigin('https://revive.example/a'),/origin/);assert.throws(()=>catalogOrigin('http://revive.example'),/HTTPS/);});
+test('support payments must use authentic HTTPS Stripe Payment Links',()=>{assert.equal(supportLink('https://buy.stripe.com/abc'),'https://buy.stripe.com/abc');assert.throws(()=>supportLink('https://buy.stripe.com.evil.com/a'),/Stripe/);assert.throws(()=>supportLink('https://other-site.com/a'),/Stripe/);});
+test('public catalog entries require valid IDs and hashes',()=>{const data={games:[{id:'my-game',title:'Example',sha256:'a'.repeat(64),bytes:1024,filename:'game.zip',rights:'original'},{id:'../bad',title:'Bad',sha256:'a'.repeat(64),bytes:100,filename:'x.zip',rights:'original'}]};assert.equal(validateCatalogResponse(data).length,1);});
+test('only signed R2 links from a legitimate R2 origin can use query params',()=>{const p={url:`https://${'a'.repeat(32)}.r2.cloudflarestorage.com/games/archive.zip?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=123`,sha256:'a'.repeat(64),fileName:'archive.zip'};assert.throws(()=>validateDownload(p));assert.doesNotThrow(()=>validateDownload(p,{allowSignedR2:true}));assert.throws(()=>validateDownload({...p,url:p.url.replace('cloudflarestorage.com','cloudflarestorage.com.evil.net')},{allowSignedR2:true}));});
+test('catalog UI provides a real cloud shelf and support entry',async()=>{const m=await import(path.resolve(__dirname,'../ui/views/catalog.mjs'));const markup=m.catalogView({catalog:[],catalogError:''});assert.match(markup,/Support REVIVE/);assert.match(markup,/Refresh catalog/);assert.match(markup,/distribution permission/);});
+
+test('support screen stays separate from game download access',async()=>{const m=await import(path.resolve(__dirname,'../ui/views/support.mjs'));const html=m.supportView({});assert.match(html,/Support|contribution/);assert.match(html,/do not purchase rights/);assert.match(html,/support-open/);});

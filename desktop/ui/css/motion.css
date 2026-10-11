@@ -1,0 +1,41 @@
+@keyframes float{0%,100%{transform:translateY(0)}
+50%{transform:translateY(-13px)}
+}
+@keyframes orbit{from{transform:rotate(0deg)}
+to{transform:rotate(360deg)}
+}
+@keyframes shimmer{0%{transform:translateX(-110%)}
+100%{transform:translateX(110%)}
+}
+@keyframes pulse{0%,100%{opacity:.5}
+50%{opacity:1}
+}
+@keyframes rise{from{transform:translateY(11px);opacity:0}
+to{transform:translateY(0);opacity:1}
+}
+@keyframes modal-in{from{transform:scale(.96) translateY(8px);opacity:0}
+to{transform:none;opacity:1}
+}
+
+.content.enter>*{animation:rise .38s var(--ease) both}
+.content.enter>*:nth-child(2){animation-delay:40ms}
+.content.enter>*:nth-child(3){animation-delay:80ms}
+.content.enter>*:nth-child(4){animation-delay:115ms}
+.content.enter>*:nth-child(5){animation-delay:135ms}
+.boot-screen{position:fixed;z-index:900;inset:0;background:#090a12;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:opacity .45s ease,visibility .45s;pointer-events:none}
+.boot-screen.fade{opacity:0;visibility:hidden}
+.boot-emblem{width:76px;height:76px;display:grid;place-items:center;border:1px solid #a781e3;border-radius:22px;background:linear-gradient(135deg,#af7fff,#5a3299);box-shadow:0 12px 80px #7e53e766;position:relative}
+.boot-emblem span{font-weight:900;font-size:53px;letter-spacing:-5px}
+.boot-emblem i{position:absolute;right:-7px;top:-5px;width:17px;height:17px;background:#f6c0d8;transform:rotate(45deg);box-shadow:0 0 20px #fbabec}
+.boot-word{font-size:30px;font-weight:1000;letter-spacing:7px;margin:22px 0 6px}
+.boot-tag{font-size:9px;font-weight:900;letter-spacing:3.2px;color:#a9a1c3}
+.boot-line{height:2px;background:#29233c;width:162px;overflow:hidden;margin-top:25px;border-radius:6px}
+.boot-line span{display:block;width:45%;height:100%;background:linear-gradient(90deg,#7c5ac9,#ddb5ff);animation:shimmer 1s infinite}
+.scene-ring.a{animation:orbit 38s linear infinite}
+.scene-ring.b{animation:orbit 27s linear infinite reverse}
+.scene-center{animation:float 6s ease-in-out infinite}
+.connected-dot,.system-led{animation:pulse 3s ease-in-out infinite}
+
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+

@@ -1,0 +1,26 @@
+/* REVIVE auto-update: non-blocking, Discord-inspired branded motion. */
+.update-dock{position:fixed;bottom:66px;left:calc(250px + 18px);z-index:180;max-width:min(440px,calc(100vw - 290px));width:390px;background:linear-gradient(115deg,#231d38f8,#121627f9);border:1px solid #8e76c878;border-radius:18px;box-shadow:0 24px 64px #0009,0 0 42px #a27bff19;animation:update-appear .45s cubic-bezier(.2,.8,.2,1) both;pointer-events:none}
+.update-dock.done{border-color:#62dab05c}
+.updater-core{display:flex;align-items:center;gap:17px;padding:16px;min-width:0}
+.updater-copy{min-width:0;flex:1}
+.updater-name{font-size:13px;letter-spacing:.15px;font-weight:850;color:#f7f1ff}
+.updater-name span{font-size:10px;color:#b7a8d8;margin-left:5px}
+.updater-copy p{font-size:11px;color:#a7a8c4;line-height:1.5;margin:5px 0 0;overflow-wrap:anywhere}
+.updater-copy small{font-size:10px;color:#b5a1e7;display:block;margin-top:5px}
+.updater-badge{width:49px;height:49px;border-radius:14px;flex-shrink:0;background:linear-gradient(140deg,#aa82ec,#6142a5);display:grid;place-items:center;position:relative;box-shadow:0 5px 22px #8056e661}
+.updater-badge strong{font-size:30px;color:white;line-height:1;letter-spacing:-3px}
+.updater-badge i{font-size:13px;font-style:normal;color:#ffd2f3;position:absolute;top:-5px;right:-6px;filter:drop-shadow(0 0 7px #f59afb)}
+.updater-halo{position:absolute;inset:-8px;border-radius:20px;border:2px solid transparent;border-top-color:#d8b0ff;border-left-color:#d8b0ff;opacity:0}
+.updater-core.busy .updater-halo{animation:revive-rotate 1.3s linear infinite;opacity:1}
+.updater-track{height:4px;background:#3b344d;border-radius:9px;overflow:hidden;margin-top:11px}
+.updater-track span{height:100%;display:block;background:linear-gradient(90deg,#8a6bf4,#e3c3ff);box-shadow:0 0 12px #ac90ffad;border-radius:9px;transition:width .2s ease}
+.updater-actions{margin-left:auto;display:flex;flex-wrap:wrap;gap:9px}
+.updater-actions button{white-space:nowrap}
+.settings-update{margin:22px 0 5px;display:flex;flex-direction:column;gap:4px}
+.settings-update .updater-core{padding:10px 5px}
+.settings-update .updater-copy{flex:1}
+@keyframes revive-rotate{to{transform:rotate(360deg)}}
+@keyframes update-appear{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:1080px){.update-dock{left:120px;width:340px;max-width:calc(100vw - 140px)}}
+@media(max-width:650px){.update-dock{bottom:63px;left:12px;right:12px;width:auto;max-width:none}}
+@media(prefers-reduced-motion:reduce){.updater-halo,.update-dock{animation:none!important}}

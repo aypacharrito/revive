@@ -1,0 +1,45 @@
+/* Native launcher integration for existing, user-installed emulators. */
+.console-banner{display:flex;align-items:center;justify-content:space-between;gap:26px;background:radial-gradient(circle at 83% 24%,#ae70ea44,transparent 40%),linear-gradient(112deg,#201a35,#111623);border:1px solid #4e456d;border-radius:19px;padding:36px 38px;margin:10px 0 20px;overflow:hidden}
+.console-banner-copy{max-width:570px;position:relative;z-index:1}
+.console-banner h2{font-size:clamp(27px,3.7vw,48px);letter-spacing:-1.7px;line-height:1.05;margin:9px 0 13px;font-weight:900}
+.console-banner h2 em{color:#c5a6fa;font-style:normal}
+.console-banner p{max-width:520px;font-size:12px;color:#aeb4c8;line-height:1.7}
+.console-banner-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:18px}
+.console-banner-chips span{border:1px solid #645b87;background:#ffffff0b;padding:7px 10px;border-radius:20px;font-size:10px;color:#d3c9ec}
+.console-banner-graphic{height:152px;min-width:166px;display:grid;place-items:center;color:#e7d0ff;background:radial-gradient(circle,#a88aff40,transparent 66%);filter:drop-shadow(0 0 28px #b178f944)}
+.gpu-panel{display:flex;align-items:center;gap:18px;background:#17202b;border:1px solid #344558;border-radius:14px;padding:20px 23px;margin-bottom:30px}
+.gpu-icon,.console-ico{width:50px;height:50px;border-radius:13px;background:#403552;color:#d5baff;display:grid;place-items:center;flex:none}
+.gpu-panel>div:nth-child(2){flex:1}
+.gpu-panel h3{font-size:17px;margin:4px 0 5px}
+.gpu-panel p{font-size:11px;color:#abb8c5;line-height:1.5;max-width:760px;margin:0}
+.console-heading{margin-top:20px}
+.console-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:18px 0 30px}
+.console-card{background:linear-gradient(145deg,#1c2030,#131623);border:1px solid #34394f;border-radius:16px;padding:24px;min-width:0;transition:border-color .2s,transform .2s,box-shadow .2s}
+.console-card:hover{border-color:#8372b3;transform:translateY(-2px);box-shadow:0 18px 35px #0004}
+.console-card-head{display:flex;align-items:center;gap:13px}
+.console-name{min-width:0;flex:1}
+.console-name h3{font-size:17px;margin:0 0 6px}
+.console-status{font-size:10px;color:#b4a1c9}
+.console-status.ready{color:#8fe0bb}
+.console-card-head .btn{font-size:10px;flex:none}
+.console-intro{font-size:11px;color:#a8adc2;line-height:1.5;margin:19px 0}
+.console-platforms{border:1px solid #34394c;border-radius:12px;overflow:hidden;margin-bottom:14px}
+.console-platform{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 13px;border-bottom:1px solid #303647}
+.console-platform:last-child{border-bottom:0}
+.console-platform strong{font-size:11px}
+.console-platform small{display:block;color:#9aa4b5;font-size:10px;margin-top:4px}
+.console-platform-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.mini-btn{font-size:10px;font-weight:800;border:1px solid #56536f;border-radius:8px;background:#24263b;color:#d2c9ed;padding:7px 9px;display:inline-flex;align-items:center;gap:4px;transition:transform .15s,background .15s}
+.mini-btn:hover{background:#4b3b70;transform:translateY(-1px)}
+.mini-btn:active{transform:translateY(1px)}
+.primary-mini{background:#9b77e7;color:#121020;border-color:#bc9bff}
+.primary-mini:hover{background:#c2a8ff;color:#14111f}
+.console-path{font-family:Consolas,monospace;font-size:10px;color:#8291a9;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;min-height:17px;margin:16px 0 10px}
+.emulator-doc-link{font-size:10px;display:inline-flex;align-items:center;gap:5px;color:#cbb2ff;text-decoration:none}
+.emulator-doc-link:hover{text-decoration:underline}
+.console-legal{display:flex;gap:18px;background:#1a1b26;border:1px solid #514a5e;border-radius:13px;padding:23px;margin-bottom:30px;color:#beabec}
+.console-legal h3{font-size:14px;margin-bottom:8px;color:#e6def8}
+.console-legal p{font-size:11px;line-height:1.65;color:#a9a4bb;margin:0}
+.console-loading{padding:30px;border:1px solid #303549;border-radius:15px;background:#171b29;color:#a9a9be}
+@media(max-width:1110px){.console-grid{grid-template-columns:1fr}}
+@media(max-width:730px){.console-banner{padding:27px}.console-banner-graphic{display:none}.gpu-panel{align-items:flex-start;flex-wrap:wrap}.console-card{padding:16px}.console-card-head{flex-wrap:wrap}.console-card-head .btn{margin-left:auto}}

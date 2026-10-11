@@ -1,7 +1,17 @@
 {
   "name": "revive-cloud",
-  "version": "0.1.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
-  "dependencies": { "openai": "^6.0.0" }
+  "dependencies": {
+    "openai": "^6.0.0",
+    "@aws-sdk/client-s3": "^3.900.0",
+    "@aws-sdk/lib-storage": "^3.900.0",
+    "@aws-sdk/s3-request-presigner": "^3.900.0",
+    "@upstash/redis": "^1.35.0"
+  },
+  "scripts": {
+    "publish": "node scripts/publish-game.mjs",
+    "test": "node --test tests/*.test.mjs"
+  }
 }

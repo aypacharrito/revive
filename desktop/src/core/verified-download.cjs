@@ -1,0 +1,45 @@
+'use strict';
+const fs=require('node:fs');
+const path=require('node:path');
+const crypto=require('node:crypto');
+const {Readable,Transform}=require('node:stream');
+const {pipeline}=require('node:stream/promises');
+const {validateEndpoint}=require('./cloud.cjs');
+const MAX_BYTES=8*1024*1024*1024;
+function validateDownload({url,sha256,fileName},{allowSignedR2=false}={}) {
+  let parsed;
+  if(allowSignedR2){
+    parsed=new URL(url);
+    if(parsed.protocol!=='https:'||!(/^[a-f0-9]{32}\.r2\.cloudflarestorage\.com$/i.test(parsed.hostname))||parsed.username||parsed.password||parsed.hash||parsed.searchParams.get('X-Amz-Algorithm')!=='AWS4-HMAC-SHA256'||!parsed.searchParams.has('X-Amz-Signature')) throw Error('Invalid signed R2 download URL.');
+  }else parsed=validateEndpoint(url);
+  if(!/^[a-f0-9]{64}$/i.test(sha256||''))throw Error('A trusted 64-character SHA-256 is required.');
+  if(!/^[a-zA-Z0-9][a-zA-Z0-9_. ()-]{0,120}$/.test(fileName||'')||fileName==='.'||fileName==='..')throw Error('Choose a safe file name.');
+  return {url:parsed.toString(),sha256:sha256.toLowerCase(),fileName};
+}
+async function verifiedDownload(params,folder,{signal,onProgress,request=fetch,maxBytes=MAX_BYTES}={}) {
+  const job=validateDownload(params,{allowSignedR2:params?.signedR2===true});
+  fs.mkdirSync(folder,{recursive:true});
+  const target=path.join(folder,job.fileName);
+  if(fs.existsSync(target))throw Error('Destination already exists. Rename the file or move it first.');
+  const temp=path.join(folder,`.revive-${crypto.randomUUID()}.part`);
+  let total=0;
+  try{
+    const response=await request(job.url,{signal,redirect:'error'});
+    if(!response.ok||!response.body)throw Error(`Download failed (HTTP ${response.status}).`);
+    const declared=Number(response.headers.get('content-length')||0);
+    if(declared>maxBytes)throw Error('Download exceeds allowed size.');
+    const hash=crypto.createHash('sha256');
+    const reader=Readable.fromWeb(response.body);
+    const transform=new Transform({transform(chunk,_encoding,callback){
+      total+=chunk.length;
+      if(total>maxBytes)return callback(Error('Download exceeds allowed size.'));
+      hash.update(chunk);onProgress?.({bytes:total,total:declared||null});callback(null,chunk);
+    }});
+    await pipeline(reader,transform,fs.createWriteStream(temp,{flags:'wx'}),{signal});
+    const observed=hash.digest('hex');
+    if(observed!==job.sha256)throw Error('SHA-256 mismatch: discarded the download.');
+    fs.renameSync(temp,target);
+    return {file:target,bytes:total,sha256:observed};
+  }finally{try{fs.unlinkSync(temp)}catch{}}
+}
+module.exports={validateDownload,verifiedDownload,MAX_BYTES};
