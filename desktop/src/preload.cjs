@@ -2,6 +2,12 @@
 const { contextBridge, ipcRenderer } = require('electron');
 const invoke = (channel, ...args) => ipcRenderer.invoke(channel, ...args);
 contextBridge.exposeInMainWorld('revive', Object.freeze({
+  appInfo: () => invoke('app:info'),
+  listDownloads: () => invoke('download:list'),
+  pauseDownload: id => invoke('download:pause', id),
+  retryDownload: id => invoke('download:retry', id),
+  revealDownload: id => invoke('download:reveal', id),
+  clearFinishedDownloads: () => invoke('download:clearFinished'),
   listGames: () => invoke('library:list'),
   catalogList: () => invoke('catalog:list'),
   catalogDownload: id => invoke('catalog:download',id),

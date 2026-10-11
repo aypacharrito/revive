@@ -4,7 +4,7 @@ cd /d "%~dp0"
 title REVIVE - Windows Installer Builder
 where npm.cmd >nul 2>nul
 if errorlevel 1 (echo Install Node.js LTS from https://nodejs.org/en/ & pause & exit /b 1)
-call npm.cmd --prefix desktop install --no-audit --no-fund
+call npm.cmd --prefix desktop ci --no-audit --no-fund
 if errorlevel 1 goto :error
 call npm.cmd --prefix desktop test
 if errorlevel 1 goto :error

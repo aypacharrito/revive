@@ -25,3 +25,24 @@ test('R2 resume restarts when server ignores Range',async()=>{
   assert.equal(result.resumedBytes,0);assert.equal(fs.readFileSync(result.file,'utf8'),text);
  }finally{fs.rmSync(folder,{recursive:true,force:true})}
 });
+
+test('a fully received partial file finishes validation without another network request',async t=>{
+ const folder=fs.mkdtempSync(path.join(os.tmpdir(),'revive-complete-part-'));t.after(()=>fs.rmSync(folder,{recursive:true,force:true}));
+ fs.writeFileSync(path.join(folder,`.revive-${sha256.slice(0,18)}-demo.zip.part`),data);
+ const result=await verifiedDownload(params,folder,{resume:true,request:async()=>{throw Error('Should not request already complete bytes');}});
+ assert.equal(result.resumedBytes,data.length);assert.equal(fs.readFileSync(result.file,'utf8'),text);
+});
+test('range no longer satisfiable restarts once and verifies the complete response',async t=>{
+ const folder=fs.mkdtempSync(path.join(os.tmpdir(),'revive-range-expired-'));t.after(()=>fs.rmSync(folder,{recursive:true,force:true}));
+ fs.writeFileSync(path.join(folder,`.revive-${sha256.slice(0,18)}-demo.zip.part`),Buffer.from('old-broken-part'));
+ let count=0;const result=await verifiedDownload(params,folder,{resume:true,request:async(_url,options)=>{count++;if(count===1)return new Response(null,{status:416});assert.deepEqual(options.headers,{});return new Response(data,{status:200});}});
+ assert.equal(count,2);assert.equal(result.resumedBytes,0);assert.equal(fs.readFileSync(result.file,'utf8'),text);
+});
+test('a dropped streaming connection preserves cloud partial bytes for a verified resume',async t=>{
+ const folder=fs.mkdtempSync(path.join(os.tmpdir(),'revive-dropped-'));t.after(()=>fs.rmSync(folder,{recursive:true,force:true}));
+ const body=new ReadableStream({start(controller){controller.enqueue(data.subarray(0,6));setTimeout(()=>controller.error(Object.assign(new TypeError('terminated'),{cause:{code:'UND_ERR_SOCKET'}})),20);}});
+ await assert.rejects(verifiedDownload(params,folder,{resume:true,request:async()=>new Response(body)}),/terminated/);
+ const partial=path.join(folder,`.revive-${sha256.slice(0,18)}-demo.zip.part`);assert.equal(fs.statSync(partial).size,6);
+ const result=await verifiedDownload(params,folder,{resume:true,request:async()=>new Response(data.subarray(6),{status:206,headers:{'content-range':`bytes 6-${data.length-1}/${data.length}`}})});
+ assert.equal(fs.readFileSync(result.file,'utf8'),text);
+});

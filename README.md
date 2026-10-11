@@ -1,31 +1,34 @@
-# REVIVE v1.1 — Universal Cloud + Windows installer pipeline
+# REVIVE 1.2
 
-## Fast start: ONE prompt, NO `IMPORT` confirmation
+REVIVE is a Windows game library inspired by Steam and Xbox: recent games, a clear Play action, favorites, save protection, friends, consoles, and verified downloads.
 
-1. Extract this ZIP.
-2. Double-click **RUN_NOW.bat**.
-3. Paste your existing GitHub Desktop repository folder path (e.g. `C:\Users\YOU\Documents\GitHub\Revive`) and press **Enter**.
-4. The validated files copy immediately, with backups of changed files kept outside GitHub. No second confirmation, build, or automatic push.
-5. In **GitHub Desktop**, review Changes, **Commit to main**, then **Push origin**.
+## Install the finished app
 
-## How to obtain a REAL Windows `.exe`
+The accompanying **REVIVE-Setup-1.2.0.exe** is a real Windows x64 installer built and tested locally. Double-click it to install REVIVE. The EXE is delivered separately from this source ZIP; no source import or build is needed to use it. Its SHA-256 sidecar identifies the exact delivered installer.
 
-This archive **does not contain a precompiled installer**. Copying source code into GitHub cannot compile a Windows executable by itself.
+This is an unsigned preview. Code signing and a public 1.2 GitHub release are still pending. The official [GitHub Releases page](https://github.com/aypacharrito/revive/releases) may show an older version until the new release is published.
 
-After you push v1.1 to `main` on GitHub, [the Windows preview workflow](https://github.com/aypacharrito/revive/actions/workflows/windows-preview.yml) is configured to build a real **REVIVE-Setup-1.1.0.exe** using GitHub's Windows runner. It uploads the installer and SHA-256 checksum, then attempts to publish both under [REVIVE Releases](https://github.com/aypacharrito/revive/releases). GitHub repository permissions and successful CI are required; a release has **not** been verified as published.
+## What changed
 
-Once that workflow succeeds, double-click **GET_REVIVE_EXE.bat** from this extracted folder. It downloads the real installer from the official `aypacharrito/revive` release to Windows Downloads, verifies its size and release checksum (when present), and shows it in Explorer. It does **not** run the executable automatically.
+- A recent-game hero and Jump back in shelf make returning to a game easy. Favorites, platform filters, sorting, and search work together.
+- Download history survives restart. R2 transfers can pause and resume, obtain fresh signed URLs, validate ranges, and verify SHA-256 before completion. Manual downloads can retry from the beginning.
+- Artwork and progress indicators render under the app's security policy. Cloud settings now save correctly. Duplicate game launches are blocked and short sessions no longer add a phantom minute.
+- A branded Windows icon, supported Electron runtime, dependency lockfiles, and repeatable Windows build jobs make packaging reliable.
+- The website update fixes `/download`, checks the official installer through a cached backend endpoint, and keeps GitHub Releases accessible when that check fails.
 
-**Alternative:** On your Windows PC, with Node.js LTS installed and an internet connection, double-click **RUN_INSTALLER_NOW.bat**. It installs Electron build dependencies and builds the real installer in `desktop\dist` on your own computer. The build is not guaranteed until executed on Windows.
+## Update the existing GitHub Desktop repository
 
-Unsigned preview installers can trigger Windows publisher warnings. Do not disable Windows security protections to bypass warnings; validate the official source and checksum. Signed production releases remain a future task.
+1. Extract **REVIVE-1.2-Source-Update.zip**.
+2. Double-click **RUN_NOW.bat** in its extracted folder.
+3. Paste your existing GitHub Desktop repository folder path and press **Enter**.
+4. Review the changes in GitHub Desktop, commit, and push when ready.
 
-## Other v1.1 features
+The folder path is the only importer prompt. Changed originals are backed up outside the repository. Personal game files, local credentials, and Git history are preserved. Source import does not publish the website or run the installer.
 
-- **One REVIVE network:** desktop obtains the public Supabase project URL and publishable key from REVIVE's Vercel backend. No player should need to manually enter cloud keys; each user signs into their own account.
-- **Persistent friends and messages:** Supabase schema uses RLS. Actual multiplayer/social use across two user devices still needs end-to-end testing.
-- **Presence:** Upstash Redis (Vercel). Public clients never receive Redis credentials.
-- **Cloud library:** Cloudflare R2 signed, SHA-256-verified, resumable downloads. R2 requires a separately configured bucket and credentials.
-- **Owner publishing:** `PUBLISH_AUTHORIZED_GAME.bat` and `PUBLISH_AUTHORIZED_LINK.bat` publish only packages with authorization to redistribute. An ordinary Google Drive or MediaFire sharing page is not automatically a direct download URL.
+## Connected services
 
-The `.exe` is **not** embedded in source code or checked into the git repository. Installers belong in GitHub Releases rather than as large binary files inside repository source history.
+Supabase provides accounts, friends, and messages. Upstash provides presence. Those services are configured on the existing backend, but social use across two signed-in players still needs validation.
+
+Cloud game packages need Cloudflare R2, which has not been configured. See [R2 setup](docs/R2_SETUP.md). Local imports and local save backup/restore work independently. AI diagnostics need a configured owner backend key. Emulator cores and game files must be supplied separately.
+
+The accompanying verification report records exactly what passed and what remains pending. See [start here](docs/REVIVE_V12_START_HERE.md) for development and release steps.

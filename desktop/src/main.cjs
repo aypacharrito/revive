@@ -10,7 +10,8 @@ const { createSnapshot, listSnapshots, restoreSnapshot, unpackSaveDirectory } = 
 const { validateEndpoint, uploadLatest, downloadLatest } = require('./core/cloud.cjs');
 const { profileFor } = require('./core/profiles.cjs');
 const { importArtwork, artworkData } = require('./core/artwork.cjs');
-const { verifiedDownload, validateDownload } = require('./core/verified-download.cjs');
+const { validateDownload } = require('./core/verified-download.cjs');
+const { createDownloadManager } = require('./core/download-jobs.cjs');
 const { collectCode } = require('./core/source-review.cjs');
 const { networkReadiness } = require('./core/network.cjs');
 const { ENGINES, SYSTEMS, importConsoleGame, buildLaunch, status: emulatorStatus, gpuGuidance } = require('./core/consoles.cjs');
@@ -18,10 +19,14 @@ const { createUpdateService } = require('./update-service.cjs');
 const social = require('./core/social.cjs');
 const {DEFAULT_ORIGIN,fetchPublicConfig}=require('./core/public-config.cjs');
 const {catalogOrigin,supportLink,validateCatalogResponse}=require('./core/catalog.cjs');
+// Honor Chromium's standard profile switch for isolated QA runs and separate libraries.
+const profileDirectory = app.commandLine.getSwitchValue('user-data-dir');
+if (profileDirectory) app.setPath('userData', path.resolve(profileDirectory));
 let win;
 let updates;
+let downloads;
 const gameSessions = new Set();
-const activeDownloads = new Map();
+const runningGames = new Set();
 let reviewPreview = null;
 const stateEvent = (channel, payload) => { if (win && !win.isDestroyed()) win.webContents.send(channel, payload); };
 const resolveFiles = () => ({
@@ -29,6 +34,7 @@ const resolveFiles = () => ({
   settings: path.join(app.getPath('userData'), 'settings.json'),
   backups: path.join(app.getPath('userData'), 'backups'),
   artwork: path.join(app.getPath('userData'), 'artwork'),
+  downloadHistory: path.join(app.getPath('userData'), 'downloads.json'),
   downloads: path.join(app.getPath('downloads'), 'REVIVE')
 });
 const listGames = () => readLibrary(resolveFiles().library);
@@ -127,6 +133,12 @@ function inspectAsync(game) {
   });
 }
 function register() {
+  ipcMain.handle('app:info', () => ({ version: app.getVersion(), runningGames: [...runningGames] }));
+  ipcMain.handle('download:list', () => downloads.list());
+  ipcMain.handle('download:pause', (_e, id) => downloads.pause(id));
+  ipcMain.handle('download:retry', (_e, id) => downloads.retry(id));
+  ipcMain.handle('download:clearFinished', () => downloads.clearFinished());
+  ipcMain.handle('download:reveal', (_e, id) => shell.showItemInFolder(downloads.reveal(id)));
   ipcMain.handle('updates:status', () => updates.status());
   ipcMain.handle('updates:check', () => updates.check());
   ipcMain.handle('updates:install', () => updates.installNow());
@@ -176,7 +188,7 @@ function register() {
   ipcMain.handle('social:respond',async(_e,id,accept)=>{const {config,session}=await socialAuth();return social.respond(config,session.access_token,id,accept);});
   ipcMain.handle('social:messages',async(_e,friendId)=>{const {config,session}=await socialAuth();return social.messages(config,session.access_token,session.user.id,friendId);});
   ipcMain.handle('social:send',async(_e,friendId,body)=>{const {config,session}=await socialAuth();return social.send(config,session.access_token,session.user.id,friendId,body);});
-  ipcMain.handle('library:list', () => listGames());
+  ipcMain.handle('library:list', () => listGames().map(game => ({ ...game, available: fs.existsSync(game.exe) })));
   ipcMain.handle('emulation:status',()=>({engines:emulatorStatus(settings()),systems:SYSTEMS}));
   ipcMain.handle('emulation:gpu',async()=>{
     try {const data=await app.getGPUInfo('basic');
@@ -228,50 +240,13 @@ function register() {
     const body=await response.json();if(!response.ok)throw Error(body.error||`Catalog HTTP ${response.status}`);
     return validateCatalogResponse(body);
   });
-  ipcMain.handle('catalog:download',async(_event,id)=>{
-    if(typeof id!=='string'||!/^[a-z0-9][a-z0-9-]{2,55}$/.test(id))throw Error('Invalid catalog game.');
-    const origin=catalogOrigin(settings().catalogUrl||DEFAULT_ORIGIN);if(!origin)throw Error('REVIVE cloud library is not reachable yet.');
-    const response=await fetch(`${origin}/api/catalog-download?id=${encodeURIComponent(id)}`,{signal:AbortSignal.timeout(15000),redirect:'error'});
-    const item=await response.json();if(!response.ok)throw Error(item.error||`Catalog HTTP ${response.status}`);
-    const validated=validateDownload(item,{allowSignedR2:true});
-    const target=new URL(validated.url);
-    if(target.protocol!=='https:' || !target.hostname.endsWith('.r2.cloudflarestorage.com'))throw Error('Unexpected download host; refusing transfer.');
-    if(activeDownloads.size>=3)throw Error('Three downloads may run at once.');
-    const jobId=crypto.randomUUID(),controller=new AbortController();activeDownloads.set(jobId,controller);
-    const started=Date.now();let last=0;
-    (async()=>{try{
-      const result=await verifiedDownload({...validated,signedR2:true},resolveFiles().downloads,{signal:controller.signal,maxBytes:512*1024**3,resume:true,onProgress:p=>{
-        const now=Date.now();if(now-last>180){last=now;stateEvent('download:changed',{id:jobId,status:'downloading',name:validated.fileName,...p,bytesPerSecond:Math.round(p.bytes/Math.max(1,(now-started)/1000))});}
-      }});
-      stateEvent('download:changed',{id:jobId,status:'complete',name:validated.fileName,cloudGame:id,...result});
-    }catch(error){stateEvent('download:changed',{id:jobId,status:controller.signal.aborted?'cancelled':'error',name:validated.fileName,error:error.message});}
-    finally{activeDownloads.delete(jobId)}})();
-    return {id:jobId,name:validated.fileName};
-  });
+  ipcMain.handle('catalog:download', (_event, id) => downloads.startCatalog(id));
   ipcMain.handle('support:open',async()=>{
     const url=supportLink(settings().supportUrl);if(!url)throw Error('Configure your Stripe Payment Link in Settings.');
     await shell.openExternal(url);return true;
   });
-  ipcMain.handle('download:start', async (_e,parameters) => {
-    const descriptor=validateDownload(parameters);
-    if(activeDownloads.size>=3) throw new Error('Three downloads may run at once.');
-    const id=crypto.randomUUID(),controller=new AbortController();
-    activeDownloads.set(id,controller);
-    const launchedAt=Date.now();
-    let lastProgress=0;
-    (async()=>{
-      try{
-        const result=await verifiedDownload(descriptor,resolveFiles().downloads,{signal:controller.signal,onProgress: progress => {
-          const elapsed=Math.max(.1,(Date.now()-launchedAt)/1000);
-          const now=Date.now();if(now-lastProgress>=150){lastProgress=now;stateEvent('download:changed',{id,status:'downloading',name:descriptor.fileName,...progress,bytesPerSecond:Math.round(progress.bytes/elapsed)});}
-        }});
-        stateEvent('download:changed',{id,status:'complete',name:descriptor.fileName,...result});
-      }catch(error){stateEvent('download:changed',{id,status:controller.signal.aborted?'cancelled':'error',name:descriptor.fileName,error:String(error.message||error)});}
-      finally{activeDownloads.delete(id);}
-    })();
-    return {id,name:descriptor.fileName};
-  });
-  ipcMain.handle('download:cancel',(_e,id)=>{const c=activeDownloads.get(id);if(!c)return false;c.abort();return true;});
+  ipcMain.handle('download:start', (_e, parameters) => downloads.start(parameters));
+  ipcMain.handle('download:cancel', (_e, id) => downloads.cancel(id));
   ipcMain.handle('download:folder',()=>{fs.mkdirSync(resolveFiles().downloads,{recursive:true});return shell.openPath(resolveFiles().downloads);});
   ipcMain.handle('source:select', async()=>{
     const choice=await dialog.showOpenDialog(win,{title:'Choose REVIVE source directory (only text files will be previewed)',properties:['openDirectory']});
@@ -317,20 +292,23 @@ function register() {
   ipcMain.handle('library:reveal', (_e, id) => shell.showItemInFolder(selectedGame(id).exe));
   ipcMain.handle('library:play', async (_e, id) => {
     const game = selectedGame(id);
+    if (runningGames.has(id)) throw Error('This game is already running.');
     if (!fs.existsSync(game.exe)) throw new Error('Game file missing. Please import again.');
     const launch=game.kind==='emulated'?buildLaunch(game,settings()):{command:game.exe,args:[],cwd:game.root};
     const started = Date.now();
+    runningGames.add(id);
     stateEvent('game:session',{id,status:'starting'});
     const child = spawn(launch.command, launch.args, { cwd: launch.cwd, shell: false, windowsHide: false, stdio: 'ignore' });
     const launched = await new Promise((resolve, reject) => {
       child.once('spawn', () => resolve(true));
-      child.once('error', reject);
+      child.once('error', error => { runningGames.delete(id); stateEvent('game:session', { id, status: 'stopped' }); reject(error); });
     });
     child.once('exit', () => {
       gameSessions.delete(child.pid);
+      runningGames.delete(id);
       stateEvent('game:session',{id,status:'stopped'});
       const current = listGames().find(g => g.id === id);
-      if (current) setGame(id, { minutes: (current.minutes || 0) + Math.max(1, Math.round((Date.now() - started) / 60000)) });
+      if (current) setGame(id, { minutes: (current.minutes || 0) + Math.round((Date.now() - started) / 6000) / 10 });
       if (win && !win.isDestroyed()) win.webContents.send('library:changed');
     });
     gameSessions.add(child.pid);
@@ -377,7 +355,21 @@ function register() {
     return json.advice || 'No advice returned.';
   });
 }
-app.whenReady().then(() => {
+const primaryInstance = app.requestSingleInstanceLock();
+if (!primaryInstance) app.quit();
+app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } });
+if (primaryInstance) app.whenReady().then(() => {
+  downloads = createDownloadManager({
+    file: resolveFiles().downloadHistory, folder: resolveFiles().downloads,
+    emit: payload => stateEvent('download:changed', payload),
+    resolveCatalog: async id => {
+      const origin = catalogOrigin(settings().catalogUrl || DEFAULT_ORIGIN);
+      const response = await fetch(`${origin}/api/catalog-download?id=${encodeURIComponent(id)}`, { signal: AbortSignal.timeout(15000), redirect: 'error' });
+      const item = await response.json();
+      if (!response.ok) throw Error(item.error || `Catalog HTTP ${response.status}`);
+      return validateDownload(item, { allowSignedR2: true });
+    }
+  });
   updates = createUpdateService({ app, sessions:gameSessions, emit: state => stateEvent('updates:state', state) });
   register();
   win = new BrowserWindow({ width: 1440, height: 900, minWidth: 960, minHeight: 650, backgroundColor: '#080a0e', title: 'REVIVE', autoHideMenuBar: true, titleBarStyle: 'hidden', titleBarOverlay: {color:'#090b10',symbolColor:'#a5adc1',height:42}, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true } });
@@ -389,5 +381,5 @@ app.whenReady().then(() => {
   win.loadFile(path.join(__dirname, '../ui/index.html'));
   win.webContents.once('did-finish-load', () => updates.start());
 });
-app.on('before-quit', () => updates?.stop());
+app.on('before-quit', () => { updates?.stop(); downloads?.shutdown(); });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });

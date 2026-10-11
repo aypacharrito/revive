@@ -19,11 +19,11 @@ h3{font-size:18px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{border:2px solid transparent;background:#383a52;background-clip:padding-box;border-radius:10px}
 ::-webkit-scrollbar-thumb:hover{background:#555773;background-clip:padding-box}
-button:focus-visible,a:focus-visible{outline:1px solid #ccb9fa;outline-offset:2px} input:focus-visible,select:focus-visible{outline:none!important;box-shadow:none!important}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid #ccb9fa!important;outline-offset:3px}
 svg{vertical-align:middle;flex-shrink:0}
 input,select{color:var(--text)}
 input::placeholder{color:#777b90}
-input:focus,select:focus{outline:none!important;border-color:inherit!important;box-shadow:none!important}
+input:focus,select:focus{border-color:#ac8bff!important}
 kbd{font:11px 'Segoe UI',monospace;color:#7e8298;border:1px solid #333747;padding:3px 6px;border-radius:5px;background:#10121c}
 .eyebrow{font-size:10px!important;letter-spacing:2.1px;font-weight:800;color:var(--violet-bright)!important;text-transform:uppercase;margin:0 0 10px}
 .small-caption{color:var(--quiet);font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:700}

@@ -1,1 +1,1 @@
-{ "framework": null, "outputDirectory": "public", "functions": { "api/diagnose.js": { "maxDuration": 60 } } }
+{ "framework": null, "outputDirectory": "public", "rewrites": [{ "source": "/download", "destination": "/index.html" }], "functions": { "api/diagnose.js": { "maxDuration": 60 } } }

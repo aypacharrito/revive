@@ -12,7 +12,7 @@ const statusText = {
   error: ['Update service unavailable', 'REVIVE still works offline. Try checking again later.']
 };
 export function renderUpdateStatus(state, detailed = false) {
-  const v = state || {phase:'development',version:'0.4.0'};
+  const v = state || {phase:'development'};
   const phase=statusText[v.phase] ? v.phase : 'development';
   const [name,detail] = statusText[phase];
   const active=['checking','available','downloading'].includes(phase);
@@ -20,7 +20,7 @@ export function renderUpdateStatus(state, detailed = false) {
   return `<div class="updater-core ${active?'busy':''}" role="status" aria-live="polite">
     <div class="updater-badge" aria-hidden="true"><div class="updater-halo"></div><strong>R</strong><i>✦</i></div>
     <div class="updater-copy"><div class="updater-name">${esc(name)}${v.version && phase==='ready'?` <span>v${esc(v.version)}</span>`:''}</div><p>${esc(phase==='error' ? (v.message || detail) : detail)}</p>
-    ${phase==='downloading'?`<div class="updater-track"><span style="width:${pct}%"></span></div><small>${pct}%${v.progress?.bytesPerSecond?` · ${esc(fmtSize(v.progress.bytesPerSecond))}`:''}</small>`:''}</div>
+    ${phase==='downloading'?`<progress class="updater-track" value="${pct}" max="100" aria-label="Update download progress"></progress><small>${pct}%${v.progress?.bytesPerSecond?` · ${esc(fmtSize(v.progress.bytesPerSecond))}`:''}</small>`:''}</div>
     ${detailed?`<div class="updater-actions"><button class="btn subtle" type="button" data-action="update-check" ${active||phase==='ready'||!v.enabled?'disabled':''}>${icon('refresh',15)} Check now</button>${phase==='ready'?`<button class="btn primary" type="button" data-action="update-restart">${icon('check',15)} Restart & install</button>`:''}</div>`:''}
   </div>`;
 }

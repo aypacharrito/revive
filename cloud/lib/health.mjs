@@ -3,5 +3,5 @@ export function readiness(env = process.env) {
   const upstash = Boolean(env.UPSTASH_REDIS_REST_URL||env.KV_REST_API_URL) && Boolean(env.UPSTASH_REDIS_REST_TOKEN||env.KV_REST_API_TOKEN);
   const supabase = ['SUPABASE_URL','SUPABASE_PUBLISHABLE_KEY'].every(k => Boolean(env[k]));
   const ai = ['OPENAI_API_KEY','REVIVE_OWNER_TOKEN'].every(k => Boolean(env[k]));
-  return { name:'REVIVE cloud', ready:true, version:'1.1.0', services:{r2,upstash,supabase,ai}, explanation:'Connection variables detected only; availability and permissions have not been tested.' };
+  return { name:'REVIVE cloud', ready:true, version:'1.2.0', services:{r2,upstash,supabase,ai}, explanation:'Connection variables detected only; availability and permissions have not been tested.' };
 }

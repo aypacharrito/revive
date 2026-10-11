@@ -15,7 +15,9 @@ import {settingsView} from '../views/settings.mjs';
 const native=window.revive||null;
 const $=selector=>document.querySelector(selector);
 const previewGames=[{id:'demo-blur',title:'Blur',exe:'C:\\Games\\Blur\\Blur.exe',root:'C:\\Games\\Blur',minutes:169,saveDir:null,favorite:true,lastPlayedAt:'2026-10-08T17:30:00',addedAt:'2026-10-06T12:00:00'},{id:'demo-sunset',title:'Sunset Overdrive',exe:'C:\\Games\\Sunset Overdrive\\Sunset.exe',root:'C:\\Games\\Sunset Overdrive',minutes:62,saveDir:null,addedAt:'2026-10-07T12:00:00'},{id:'demo-arcade',title:'Your next classic',exe:'C:\\Games\\NextGame\\Game.exe',root:'C:\\Games\\NextGame',minutes:0,saveDir:null,addedAt:'2026-10-08T12:00:00'}];
-const s={native:!!native,games:[],view:'library',selected:null,search:'',filter:'all',sort:'added',artwork:{},downloads:{},snapshots:[],report:null,advice:'',review:null,sourcePreview:null,networkReport:null,cloudConfig:{},running:null,work:false,emulators:null,gpu:null,update:{phase:'development',version:'0.7.0',enabled:false},social:null,socialFriend:null,socialMessages:[],socialPresence:{},presenceCheckedAt:0,connectionStatus:null,catalog:[],catalogError:''};
+const s={native:!!native,version:'1.2.0',games:[],view:'library',selected:null,search:'',filter:'all',sort:'added',platform:'all',artwork:{},downloads:{},snapshots:[],report:null,advice:'',review:null,sourcePreview:null,networkReport:null,cloudConfig:{},running:null,runningGames:[],work:false,emulators:null,gpu:null,update:{phase:'development',version:'1.2.0',enabled:false},social:null,socialFriend:null,socialMessages:[],socialPresence:{},presenceCheckedAt:0,connectionStatus:null,catalog:[],catalogError:''};
+try{const saved=JSON.parse(localStorage.getItem('revive.library.preferences')||'{}');if(['added','az','recent','playtime'].includes(saved.sort))s.sort=saved.sort;if(['all','pc','console'].includes(saved.platform))s.platform=saved.platform;}catch{}
+function saveLibraryPreferences(){try{localStorage.setItem('revive.library.preferences',JSON.stringify({sort:s.sort,platform:s.platform}));}catch{}}
 const pages={library:libraryView,game:gameView,consoles:consolesView,friends:friendsView,catalog:catalogView,support:supportView,multiplayer:multiplayerView,downloads:downloadsView,saves:savesView,diagnostics:diagnosticsView,settings:settingsView};
 const aliases={library:'LIBRARY',game:'GAME HUB',consoles:'CONSOLES',friends:'FRIENDS & CHAT',catalog:'CLOUD LIBRARY',support:'SUPPORT REVIVE',multiplayer:'MULTIPLAYER',downloads:'DOWNLOADS',saves:'CLOUD SAVES',diagnostics:'AI LAB',settings:'SETTINGS'};
 function toast(message,kind='success'){
@@ -30,15 +32,16 @@ function render({retainScroll=false}={}){
  document.querySelectorAll('[data-view]').forEach(el=>el.classList.toggle('active',el.dataset.view===s.view||(s.view==='game'&&el.dataset.view==='library')));
  document.querySelector('.top-search')?.classList.toggle('highlighted',!!s.search);
  content.innerHTML=(pages[s.view]||libraryView)(s);
- content.classList.remove('enter');void content.offsetWidth;content.classList.add('enter');
+ content.classList.remove('enter');if(!retainScroll){void content.offsetWidth;content.classList.add('enter');}
  if(retainScroll)content.scrollTop=scroll;else content.scrollTop=0;
- $('#downloadCount').textContent=Object.values(s.downloads).filter(j=>j.status==='downloading').length||'';
+ $('#downloadCount').textContent=Object.values(s.downloads).filter(j=>['queued','downloading'].includes(j.status)).length||'';
  $('#updateDock').innerHTML=updateDock(s.update);
- $('#footerInfo').textContent=native?'REVIVE 0.7.0 · DESKTOP':'REVIVE 0.7.0 · INTERACTIVE DESIGN PREVIEW';
+ $('#footerInfo').textContent=`REVIVE ${s.version} · ${native?'DESKTOP':'INTERACTIVE DESIGN PREVIEW'}`;
 }
 async function setView(view,{retainScroll=false}={}){
  if(!pages[view])return;
  s.view=view;
+ if(view==='downloads'&&native){const list=await call('listDownloads');s.downloads=Object.fromEntries(list.map(job=>[job.id,job]));}
  if(view==='settings'){s.cloudConfig=native?await call('settings'):{};s.connectionStatus=native?await call('connectionStatus'):null;}
  if(view==='catalog'&&native){try{s.catalog=await call('catalogList');s.catalogError='';}catch(error){s.catalogError=error.message;s.catalog=[];}}
  if(view==='consoles'&&native){[s.emulators,s.gpu]=await Promise.all([call('emulatorStatus'),call('gpuStatus')]);}
@@ -74,13 +77,14 @@ async function performAction(e){
   switch(action){
    case 'cloud-health':s.connectionStatus=await call('connectionStatus');render({retainScroll:true});toast('Cloud connection status refreshed.');return;
    case 'catalog-refresh': await setView('catalog',{retainScroll:true});toast('Catalog refreshed.');return;
-   case 'catalog-download':{const job=await call('catalogDownload',target.dataset.id);s.downloads[job.id]={...job,status:'queued',bytes:0,total:null};await setView('downloads');toast('Cloud game download started.');return;}
+   case 'catalog-download':{const job=await call('catalogDownload',target.dataset.id);s.downloads[job.id]={...job,...s.downloads[job.id]};await setView('downloads');toast('Cloud game download started.');return;}
    case 'support-open': await call('openSupport');return;
    case 'update-check':s.update=await call('checkUpdates');render({retainScroll:true});return;
    case 'update-restart':await call('installUpdate');return;
    case 'library':case 'catalog':case 'support':case 'consoles':case 'friends':case 'multiplayer':case 'downloads':case 'saves':case 'diagnostics':case 'settings': await setView(action);return;
    case 'focus-search':await setView('library');$('#search')?.focus();return;
    case 'filter':s.filter=target.dataset.filter;render({retainScroll:true});return;
+   case 'clear-filters':s.search='';s.filter='all';s.platform='all';saveLibraryPreferences();render({retainScroll:true});return;
    case 'select-game':s.selected=target.dataset.id;await setView('game');return;
    case 'select-tool-game':s.selected=target.dataset.id;s.report=null;s.advice='';await refreshBackups();render({retainScroll:true});return;
    case 'close-modal':closeModal();return;
@@ -103,7 +107,7 @@ async function performAction(e){
     showModal(`<div class="modal-head"><span class="modal-kicker">IMPORT GAME FOLDER</span><h2>Choose an executable</h2><p>Detected candidates from your local folder. Ignore installers or unrelated tools.</p></div><div class="candidate-list">${list.length?list.map((x,i)=>`<div class="candidate"><div><strong>${esc(x.name)}</strong><p>${esc(x.exe)}</p></div><button class="btn primary small" data-action="import-candidate" data-index="${i}">Import</button></div>`).join(''):'<p class="modal-empty">No likely game executables found.</p>'}</div><div class="modal-footer"><button class="btn subtle" data-action="close-modal">Close</button></div>`);return;
    }
    case 'import-candidate':{const candidate=s.candidates?.[Number(target.dataset.index)];if(!candidate)return;const game=await call('importCandidate',candidate.exe);closeModal();s.selected=game.id;await refreshLibrary();await setView('game');toast(`${game.title} added.`);return;}
-   case 'play':await call('launchGame',id);toast('Launching game…');await refreshLibrary();return;
+   case 'play':case 'play-recent':await call('launchGame',action==='play-recent'?target.dataset.id:id);toast('Launching game…');await refreshLibrary();return;
    case 'favorite':await call('toggleFavorite',id);await refreshLibrary();render({retainScroll:true});return;
    case 'artwork':{const updated=await call('selectArtwork',id);if(updated){s.artwork[id]=await call('artworkData',id);await refreshLibrary();render({retainScroll:true});toast('Custom game artwork saved.');}return;}
    case 'reveal':await call('reveal',id);return;
@@ -121,14 +125,18 @@ async function performAction(e){
    case 'network-check':s.networkReport=await call('checkNetwork');render({retainScroll:true});toast('Network adapter scan complete.');return;
    case 'open-downloads':await call('openDownloads');return;
    case 'cancel-download':await call('cancelDownload',target.dataset.id);return;
+   case 'pause-download':await call('pauseDownload',target.dataset.id);return;
+   case 'retry-download':{const job=await call('retryDownload',target.dataset.id);s.downloads[job.id]={...job,...s.downloads[job.id]};render({retainScroll:true});return;}
+   case 'reveal-download':await call('revealDownload',target.dataset.id);return;
+   case 'clear-downloads':{const jobs=await call('clearFinishedDownloads');s.downloads=Object.fromEntries(jobs.map(job=>[job.id,job]));render({retainScroll:true});toast('Finished entries cleared. Downloaded files are still saved.');return;}
   }
  }catch(err){toast(err?.message||String(err),'error');}
 }
 document.addEventListener('click',e=>{performAction(e).catch(err=>toast(err.message||String(err),'error'));});
 document.addEventListener('input',e=>{if(e.target.id==='search'){s.search=e.target.value;const cursor=e.target.selectionStart;render({retainScroll:true});const input=$('#search');input?.focus();input?.setSelectionRange(cursor,cursor);}});
-document.addEventListener('change',e=>{if(e.target.id==='sort'){s.sort=e.target.value;render({retainScroll:true});}});
+document.addEventListener('change',e=>{if(['sort','platform'].includes(e.target.id)){s[e.target.id]=e.target.value;saveLibraryPreferences();render({retainScroll:true});}});
 document.addEventListener('submit',async e=>{
- const id=e.target.id;if(!['cloudForm','aiForm','downloadForm','renameForm','socialSettingsForm','socialAuthForm','friendInviteForm','messageForm','profileForm'].includes(id))return;e.preventDefault();const body=Object.fromEntries(new FormData(e.target).entries());
+ const id=e.target.id;if(!['cloudForm','aiForm','downloadForm','renameForm','socialSettingsForm','catalogSettingsForm','socialAuthForm','friendInviteForm','messageForm','profileForm'].includes(id))return;e.preventDefault();const body=Object.fromEntries(new FormData(e.target).entries());
  const submitter=e.submitter?.value;
  try{
   if(id==='socialAuthForm'){
@@ -140,7 +148,7 @@ document.addEventListener('submit',async e=>{
   if(id==='messageForm'){if(!s.socialFriend)return;await call('socialSend',s.socialFriend,body.body);s.socialMessages=await call('socialMessages',s.socialFriend);render({retainScroll:true});const sc=$('#messageScroll');if(sc)sc.scrollTop=sc.scrollHeight;return;}
   if(id==='profileForm'){await call('socialProfile',body.handle,body.display);await refreshFriends();toast('Profile saved.');return;}
   if(id==='renameForm'){const g=selectGame();await call('renameGame',g.id,body.name);closeModal();await refreshLibrary();render();toast('Game renamed.');return;}
-  if(id==='downloadForm'){const job=await call('startDownload',body);s.downloads[job.id]={...job,...(s.downloads[job.id]||{status:'queued',bytes:0,total:null})};render({retainScroll:true});toast('Verified download queued.');return;}
+  if(id==='downloadForm'){const job=await call('startDownload',body);s.downloads[job.id]={...job,...s.downloads[job.id]};await setView('downloads',{retainScroll:true});toast('Verified download queued.');return;}
   s.cloudConfig=await call('saveSettings',body);toast('Preferences saved securely.');render({retainScroll:true});
  }catch(err){toast(err?.message||String(err),'error')}
 });
@@ -155,11 +163,12 @@ if(native){
  native.onUpdateState(data=>{const old=s.update?.phase;s.update=data;$('#updateDock').innerHTML=updateDock(data);if(s.view==='settings')render({retainScroll:true});if(data.phase==='ready'&&old!=='ready')toast('REVIVE update downloaded. It installs when you exit.');});
  native.updateStatus().then(data=>{s.update=data;$('#updateDock').innerHTML=updateDock(data);if(s.view==='settings')render({retainScroll:true});}).catch(err=>console.warn('Update status unavailable',err));
  native.onLibraryChanged(()=>refreshLibrary().catch(err=>toast(err.message,'error')));
- native.onGameSession(data=>{s.running=data.status==='playing'?data.id:null;const label=data.status==='playing'?'Game launched':data.status==='stopped'?'Game session ended':null;if(label)toast(label);if(s.view==='game')render({retainScroll:true});});
- native.onDownloadChanged(data=>{s.downloads[data.id]={...(s.downloads[data.id]||{}),...data};if(s.view==='downloads')render({retainScroll:true});if(data.status==='complete')toast(`${data.name} verified and saved.`);if(data.status==='error')toast(`${data.name}: ${data.error}`,'error');});
+ native.onGameSession(data=>{s.runningGames=s.runningGames.filter(id=>id!==data.id);if(['starting','playing'].includes(data.status))s.runningGames.push(data.id);s.running=s.runningGames[0]||null;const label=data.status==='playing'?'Game launched':data.status==='stopped'?'Game session ended':null;if(label)toast(label);if(['game','library'].includes(s.view))render({retainScroll:true});});
+ native.onDownloadChanged(data=>{s.downloads[data.id]={...(s.downloads[data.id]||{}),...data};$('#downloadCount').textContent=Object.values(s.downloads).filter(j=>['queued','downloading'].includes(j.status)).length||'';if(s.view==='downloads'&&!document.activeElement?.closest('#downloadForm'))render({retainScroll:true});if(data.status==='complete')toast(`${data.name} verified and saved.`);if(data.status==='error')toast(`${data.name}: ${data.error}`,'error');});
 }
 replaceIcons();
-refreshLibrary().catch(err=>toast(err.message,'error'));
+async function initialize(){if(native){const [info,jobs]=await Promise.all([call('appInfo'),call('listDownloads')]);s.version=info.version;s.runningGames=info.runningGames;s.downloads={...Object.fromEntries(jobs.map(job=>[job.id,job])),...s.downloads};}await refreshLibrary();}
+initialize().catch(err=>toast(err.message,'error'));
 setTimeout(()=>document.querySelector('#boot')?.classList.add('fade'),330);
 setTimeout(()=>document.querySelector('#boot')?.remove(),850);
 

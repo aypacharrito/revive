@@ -1,8 +1,9 @@
 {
   "name": "revive-desktop",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
-  "description": "REVIVE universal network, authorized cloud catalog, resumable validated downloads and Windows preview installer",
+  "author": "REVIVE contributors",
+  "description": "REVIVE game library with recent games, save protection, friends and persistent verified downloads",
   "main": "src/main.cjs",
   "scripts": {
     "start": "electron .",
@@ -11,7 +12,7 @@
     "check": "node --check src/main.cjs && node --check src/preload.cjs && node --test tests/*.test.cjs"
   },
   "devDependencies": {
-    "electron": "^37.0.0",
+    "electron": "44.7.0",
     "electron-builder": "^26.0.12"
   },
   "build": {
@@ -26,6 +27,7 @@
       "package.json"
     ],
     "win": {
+      "icon": "build/icons/revive.ico",
       "target": [
         "nsis"
       ]

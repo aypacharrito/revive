@@ -22,4 +22,5 @@ for (const f of ['index.html','styles.css','site.js']) {
  assert.equal(readFileSync(path.join(root,'public',f),'utf8'),readFileSync(path.join(root,'cloud/public',f),'utf8'));
 }
 assert(existsSync(path.join(root,'cloud/api/donation-config.js')));
-console.log('REVIVE v0.9 website checks passed');
+for (const config of ['vercel.json','cloud/vercel.json'])assert(JSON.parse(readFileSync(path.join(root,config),'utf8')).rewrites.some(r=>r.source==='/download'&&r.destination==='/index.html'));
+console.log('REVIVE website and download route checks passed');

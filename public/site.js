@@ -4,28 +4,31 @@
   const installer = document.getElementById('installer-link');
   const label = document.getElementById('installer-label');
   const status = document.getElementById('release-status');
-  // Do not lead visitors to GitHub source or an empty Releases page.
+  // Keep an official download route available if release lookup is rate-limited.
   const unavailable = (message) => {
-    installer.href = '#download';
+    installer.href = 'https://github.com/aypacharrito/revive/releases';
     installer.removeAttribute('download');
-    installer.setAttribute('aria-disabled', 'true');
-    installer.classList.add('disabled-action');
-    label.textContent = 'Windows installer coming soon';
+    installer.removeAttribute('aria-disabled');
+    installer.classList.remove('disabled-action');
+    label.textContent = 'View official Windows downloads';
     status.textContent = message;
   };
   unavailable('Checking whether the official installer is available…');
   const abort = new AbortController();
-  const timer = setTimeout(() => abort.abort(), 6500);
-  fetch('https://api.github.com/repos/aypacharrito/revive/releases?per_page=20', {
-    signal: abort.signal, headers: { Accept: 'application/vnd.github+json' }
-  }).then(response => response.ok ? response.json() : Promise.reject(Error('Could not verify releases')))
+  const timer = setTimeout(() => abort.abort(), 10000);
+  const loadReleases=async()=>{
+    try{const cached=await fetch('/api/installer',{signal:abort.signal});if(cached.ok){const data=await cached.json();if(data.release)return [data.release];}}catch{}
+    const response=await fetch('https://api.github.com/repos/aypacharrito/revive/releases?per_page=20',{signal:abort.signal,headers:{Accept:'application/vnd.github+json'}});
+    if(!response.ok)throw Error('Could not verify releases');return response.json();
+  };
+  loadReleases()
     .then(releases => {
       for (const release of releases) {
         if (release.draft) continue;
         const asset = (release.assets || []).find(item => /^REVIVE-Setup-[a-zA-Z0-9._-]+\.exe$/i.test(item.name) && item.browser_download_url && item.size > 1000000);
         if (!asset) continue;
         const url = new URL(asset.browser_download_url);
-        if (url.protocol !== 'https:' || url.hostname !== 'github.com') continue;
+        if (url.protocol !== 'https:' || url.hostname !== 'github.com' || !url.pathname.startsWith('/aypacharrito/revive/releases/download/')) continue;
         installer.href = url.href;
         installer.removeAttribute('aria-disabled');
         installer.classList.remove('disabled-action');
@@ -34,8 +37,8 @@
         status.textContent = release.tag_name + (release.prerelease ? ' · Preview release' : ' · Windows installer') + ' · Free download';
         return;
       }
-      unavailable('The Windows installer is being prepared. The download button will activate automatically once a public installer is released.');
-    }).catch(() => unavailable('An installer is not verified at the moment. Please check again later.'))
+      unavailable('Check the official releases page for Windows installers.');
+    }).catch(() => unavailable('Release lookup is temporarily unavailable. You can still open the official Windows downloads.'))
     .finally(() => clearTimeout(timer));
   installer.addEventListener('click', e => { if (installer.getAttribute('aria-disabled') === 'true') e.preventDefault(); });
   const donate = document.getElementById('donation-link');
