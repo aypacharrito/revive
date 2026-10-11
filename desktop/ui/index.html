@@ -1,0 +1,18 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'none'; object-src 'none'"><title>REVIVE · Reclaim your library</title><link rel="stylesheet" href="styles.css"></head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo"><div class="mark">R<span>✦</span></div><div><strong>REVIVE</strong><small>YOUR GAMES. YOUR WORLD.</small></div></div>
+    <div class="nav-label">YOUR SPACE</div>
+    <nav id="nav"><button class="nav-button active" data-view="library"><span>◈</span> Library</button><button class="nav-button" data-view="saves"><span>☁</span> Cloud &amp; Saves</button><button class="nav-button" data-view="diagnostics"><span>✳</span> Diagnostics</button><button class="nav-button" data-view="settings"><span>⚙</span> Settings</button></nav>
+    <div class="sidebar-bottom"><div class="server-status"><i></i> LOCAL LIBRARY <span>READY</span></div><div class="privacy">Your game files never leave your PC. Only save archives you choose are synced to your storage.</div></div>
+  </aside>
+  <main class="main">
+    <header class="topbar"><div class="crumb">PERSONAL COLLECTION <span>/</span> <strong id="pageLabel">LIBRARY</strong></div><div class="toolbar"><span class="owner"><span class="avatar">R</span> OWNER MODE</span><button class="icon-btn" data-view="settings" title="Settings">⚙</button></div></header>
+    <div id="content" class="content"></div>
+  </main>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="modal" class="modal-layer hidden" aria-modal="true" role="dialog"></div>
+</div>
+<script src="app.js"></script>
+</body></html>
