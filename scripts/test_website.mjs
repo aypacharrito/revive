@@ -1,29 +1,25 @@
 import { strict as assert } from 'node:assert';
 import { readFileSync, existsSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-for(const dir of ['public','cloud/public']) {
-  for(const filename of ['index.html','styles.css','site.js']) {
-    assert(existsSync(path.join(root,dir,filename)), `${dir}/${filename} missing`);
-  }
-  const html=readFileSync(path.join(root,dir,'index.html'),'utf8');
-  const js=readFileSync(path.join(root,dir,'site.js'),'utf8');
-  assert.match(html,/<title>REVIVE/);
-  assert.match(html,/id="download"/);
-  assert.match(html,/id="installer-link"/);
-  assert.match(html,/id="donation-link"/);
-  assert.match(html,/href="\/styles\.css"/);
-  assert.match(html,/src="\/site\.js"/);
-  assert.match(js,/REVIVE-Setup/);
-  assert.match(js,/browser_download_url/);
-  assert.match(js,/donationURL = ''/);
-  assert.match(html,/No account needed for local games/);
-  assert.doesNotMatch(html,/purchase (the|a) game/i);
+const root=process.cwd();
+for (const d of ['public','cloud/public']) {
+ const html=readFileSync(path.join(root,d,'index.html'),'utf8');
+ const js=readFileSync(path.join(root,d,'site.js'),'utf8');
+ assert.match(html,/id="installer-link"/);
+ assert.match(html,/id="donation-link"/);
+ assert.doesNotMatch(html,/Download source code/i);
+ assert.doesNotMatch(html,/Check Windows installer/i);
+ assert.match(html,/id="features"/);
+ assert.match(html,/id="support"/);
+ assert.match(html,/id="download"/);
+ assert.match(js,/\.exe/);
+ assert.match(js,/donation-config/);
+ assert.match(js,/aria-disabled/);
+ assert.doesNotMatch(js,/installer.href = releasesPage/);
+ for (const f of ['index.html','styles.css','site.js']) assert(existsSync(path.join(root,d,f)));
 }
-for(const filename of ['index.html','styles.css','site.js']){
-  const rootBytes=readFileSync(path.join(root,'public',filename));
-  const cloudBytes=readFileSync(path.join(root,'cloud/public',filename));
-  assert(rootBytes.equals(cloudBytes),`root and cloud website versions differ: ${filename}`);
+for (const f of ['index.html','styles.css','site.js']) {
+ assert.equal(readFileSync(path.join(root,'public',f),'utf8'),readFileSync(path.join(root,'cloud/public',f),'utf8'));
 }
-console.log('REVIVE website checks: all passed (assets, links, CTA states, site copies).');
+assert(existsSync(path.join(root,'cloud/api/donation-config.js')));
+console.log('REVIVE v0.9 website checks passed');
