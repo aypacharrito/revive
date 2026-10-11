@@ -1,3 +1,15 @@
+# REVIVE v0.8 — Public Windows download website + GitHub Desktop importer
+
+**This version fixes the missing homepage for Vercel.** It adds a polished Steam/Xbox-inspired but original REVIVE landing page, a Windows installer release-detection button, a working source ZIP download, and one optional donation section. It adds **no game sales, subscription, or paid downloads**.
+
+**Use `RUN_NOW.bat` only to import code into your existing GitHub Desktop REVIVE repository.** Paste the folder you got from GitHub Desktop → Show in Explorer, type `IMPORT`, then commit and push. This does **not** install Electron or run the desktop program. Refer to [`docs/WEBSITE_DEPLOYMENT.md`](docs/WEBSITE_DEPLOYMENT.md) for exact Vercel settings and why the current site is 404.
+
+Website copies are in `public/` and `cloud/public/` so either Vercel Root Directory (repository root or `cloud`) can serve the homepage. The older Vercel API in `cloud/api/` remains unchanged.
+
+**Public installer warning:** no released `REVIVE-Setup-*.exe` has been verified. Until you publish a Windows installer through GitHub Releases, the website clearly indicates its release status and the source code remains downloadable. **Donations:** the link is a placeholder until you provide an actual payment link; no fees are charged by REVIVE.
+
+## Previous project documentation
+
 # REVIVE v0.7 — GitHub Desktop one-click source importer + Cloud Connections
 
 **RUN_NOW.bat NOW MEANS "IMPORT CODE INTO GITHUB DESKTOP"**, not "start Electron".
