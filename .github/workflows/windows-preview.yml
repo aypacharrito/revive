@@ -1,0 +1,60 @@
+name: Publish REVIVE Windows preview EXE
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/windows-preview.yml'
+permissions:
+  contents: write
+jobs:
+  preview-installer:
+    if: github.repository == 'aypacharrito/revive'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        working-directory: desktop
+        run: npm install --no-audit --no-fund
+      - name: Test launcher
+        working-directory: desktop
+        run: npm test
+      - name: Build real unsigned Windows setup EXE
+        working-directory: desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npm run dist:win
+      - name: Verify installer and calculate checksum
+        shell: pwsh
+        run: |
+          $file = Get-ChildItem 'desktop/dist/REVIVE-Setup-*.exe' -File | Select-Object -First 1
+          if (!$file -or $file.Length -lt 3000000) { throw 'Windows installer missing or too small' }
+          Get-FileHash $file.FullName -Algorithm SHA256 | Format-Table
+      - name: Write SHA-256 sidecar
+        shell: pwsh
+        run: |
+          $file = Get-ChildItem 'desktop/dist/REVIVE-Setup-*.exe' -File | Select-Object -First 1
+          $hash = (Get-FileHash $file.FullName -Algorithm SHA256).Hash.ToUpperInvariant()
+          Set-Content -LiteralPath ($file.FullName + '.sha256') -Value ($hash + '  ' + $file.Name) -Encoding Ascii
+      - uses: actions/upload-artifact@v4
+        with:
+          name: REVIVE-Windows-Preview
+          path: |
+            desktop/dist/REVIVE-Setup-*.exe
+            desktop/dist/REVIVE-Setup-*.exe.sha256
+          retention-days: 30
+      - name: Publish download on GitHub Releases
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version=(Get-Content desktop/package.json | ConvertFrom-Json).version
+          $tag="v$version-preview.${{ github.run_number }}"
+          $exe=(Get-ChildItem 'desktop/dist/REVIVE-Setup-*.exe' -File | Select-Object -First 1).FullName
+          gh release create $tag $exe "$exe.sha256" --target "${{ github.sha }}" --prerelease --title "REVIVE $version Windows Preview (${{ github.run_number }})" --notes "Unsigned Windows test installer. Windows SmartScreen may warn. This preview is not a signed automatic-update release; test before sharing."

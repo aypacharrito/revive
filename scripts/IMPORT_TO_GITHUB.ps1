@@ -2,7 +2,6 @@
 [CmdletBinding()]
 param(
   [string]$Destination,
-  [switch]$Yes,
   [string]$SourceOverride
 )
 $ErrorActionPreference = 'Stop'
@@ -63,10 +62,7 @@ Write-Host ('New: ' + $newFiles.Count + '  |  Updated: ' + $updates.Count + '  |
 Write-Host 'Your .git, untracked files, .env, local dependencies, and game files are preserved.'
 Write-Host 'Unreferenced old project files are NOT deleted.'
 if ($newFiles.Count -eq 0 -and $updates.Count -eq 0) { Write-Host 'Already up to date.' -ForegroundColor Green; exit 0 }
-if (-not $Yes) {
-  $answer = (Read-Host 'Type IMPORT to copy the code and back up changed files').Trim()
-  if ($answer -cne 'IMPORT') { Write-Host 'Canceled; nothing changed.'; exit 0 }
-}
+# The validated repository path is the only prompt. Begin copying immediately.
 $backup = $null
 if ($updates.Count -gt 0) {
   # Place backups outside the Git repository so they cannot be accidentally pushed.

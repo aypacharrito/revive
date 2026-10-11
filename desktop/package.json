@@ -1,8 +1,8 @@
 {
   "name": "revive-desktop",
-  "version": "0.7.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "REVIVE launcher, GitHub Desktop importing, cloud connection guide, private Supabase friends and Upstash presence",
+  "description": "REVIVE universal network, authorized cloud catalog, resumable validated downloads and Windows preview installer",
   "main": "src/main.cjs",
   "scripts": {
     "start": "electron .",

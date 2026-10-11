@@ -11,12 +11,15 @@ echo             REVIVE  -  GITHUB CODE IMPORTER
 echo  ========================================================
 echo.
 echo  This copies REVIVE SOURCE CODE into your existing GitHub
- echo  Desktop folder. It does NOT install Node or launch the app.
+echo  Desktop folder. It does NOT install Node or launch the app.
 echo.
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\IMPORT_TO_GITHUB.ps1"
 set "exitCode=%ERRORLEVEL%"
 echo.
 if not "%exitCode%"=="0" echo [!] Import did not finish. Your existing repository was preserved.
-echo Press any key to close this window.
-pause >nul
+if "%exitCode%"=="0" timeout /t 5 /nobreak >nul
+if not "%exitCode%"=="0" (
+  echo Press any key to close this window.
+  pause >nul
+)
 exit /b %exitCode%

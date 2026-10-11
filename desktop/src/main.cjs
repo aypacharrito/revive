@@ -16,6 +16,7 @@ const { networkReadiness } = require('./core/network.cjs');
 const { ENGINES, SYSTEMS, importConsoleGame, buildLaunch, status: emulatorStatus, gpuGuidance } = require('./core/consoles.cjs');
 const { createUpdateService } = require('./update-service.cjs');
 const social = require('./core/social.cjs');
+const {DEFAULT_ORIGIN,fetchPublicConfig}=require('./core/public-config.cjs');
 const {catalogOrigin,supportLink,validateCatalogResponse}=require('./core/catalog.cjs');
 let win;
 let updates;
@@ -58,7 +59,7 @@ function settings() {
 }
 function settingsPublic() {
   const s = settings();
-  return { cloudUrl: s.cloudUrl || '', cloudUser: s.cloudUser || '', cloudReady: !!s.cloudSecret, aiUrl: s.aiUrl || '', aiReady: !!s.aiSecret, socialUrl: s.socialUrl || '', socialKeyReady: !!s.socialAnonKey, catalogUrl:s.catalogUrl||'', supportUrl:s.supportUrl||'' };
+  return { cloudUrl: s.cloudUrl || '', cloudUser: s.cloudUser || '', cloudReady: !!s.cloudSecret, aiUrl: s.aiUrl || '', aiReady: !!s.aiSecret, socialUrl: s.socialUrl || '', socialKeyReady: !!s.socialAnonKey, catalogUrl:s.catalogUrl||DEFAULT_ORIGIN, supportUrl:s.supportUrl||'', networkAuto:true };
 }
 function storeSettings(partial) {
   const old = settings();
@@ -84,10 +85,15 @@ function cloudSettings() {
   if (!s.cloudUrl || !s.cloudUser || !s.cloudSecret) throw new Error('Configure WebDAV folder URL, username and password in Settings first.');
   return { url: s.cloudUrl, user: s.cloudUser, password: encryptedLoad(s.cloudSecret) };
 }
-function socialConfig() {
+let publicConfigCache=null;
+async function socialConfig() {
  const s=settings();
- if(!s.socialUrl || !s.socialAnonKey) throw Error('Configure Supabase Project URL and publishable key in Settings first.');
- return social.validateSocialConfig({url:s.socialUrl,anonKey:s.socialAnonKey});
+ // Advanced users may explicitly use a different public Supabase project.
+ if(s.socialUrl && s.socialAnonKey)return social.validateSocialConfig({url:s.socialUrl,anonKey:s.socialAnonKey});
+ if(!publicConfigCache || Date.now()-publicConfigCache.at>300000){
+   const value=await fetchPublicConfig();publicConfigCache={value,at:Date.now()};
+ }
+ return social.validateSocialConfig({url:publicConfigCache.value.socialUrl,anonKey:publicConfigCache.value.socialAnonKey});
 }
 function currentSocialSession() {
  const s=settings();
@@ -99,7 +105,7 @@ function saveSocialSession(session) {
  fs.mkdirSync(path.dirname(resolveFiles().settings),{recursive:true});fs.writeFileSync(resolveFiles().settings,JSON.stringify(next,null,2),{mode:0o600});
 }
 async function socialAuth() {
- const c=socialConfig();let session=currentSocialSession();
+ const c=await socialConfig();let session=currentSocialSession();
  if(Date.now() > session.expiresAt-60000) {
   const next=await social.refreshToken(c,session.refresh_token);
   session={access_token:next.access_token,refresh_token:next.refresh_token,user:next.user,expiresAt:Date.now()+next.expires_in*1000};
@@ -125,7 +131,7 @@ function register() {
   ipcMain.handle('updates:check', () => updates.check());
   ipcMain.handle('updates:install', () => updates.installNow());
   ipcMain.handle('cloud:connectionStatus',async()=>{
-    const st=settings(),origin=catalogOrigin(st.catalogUrl||st.aiUrl);
+    const st=settings(),origin=catalogOrigin(st.catalogUrl||DEFAULT_ORIGIN);
     if(!origin)return {configured:false,services:{}};
     try {const response=await fetch(`${origin}/api/health`,{signal:AbortSignal.timeout(9000),redirect:'error'});
       if(!response.ok)throw Error(`HTTP ${response.status}`);
@@ -133,7 +139,7 @@ function register() {
     }catch(error){return {configured:true,error:'Cloud endpoint unreachable: '+error.message,services:{}};}
   });
   ipcMain.handle('social:presence',async(_event,friendIds)=>{
-    const st=settings(),origin=catalogOrigin(st.catalogUrl||st.aiUrl);
+    const st=settings(),origin=catalogOrigin(st.catalogUrl||DEFAULT_ORIGIN);
     if(!origin)return {configured:false,online:{}};
     const {session}=await socialAuth();
     const headers={Authorization:`Bearer ${session.access_token}`};
@@ -146,9 +152,9 @@ function register() {
     if(!result.ok)throw Error('Friend online-status check failed.');
     const data=await result.json();return {configured:true,online:data.online||{}};
   });
-  ipcMain.handle('social:signup',(_e,email,password)=>social.signUp(socialConfig(),email,password).then(x=>({needsVerification:!x?.access_token})));
+  ipcMain.handle('social:signup',async(_e,email,password)=>social.signUp(await socialConfig(),email,password).then(x=>({needsVerification:!x?.access_token})));
   ipcMain.handle('social:signin',async(_e,email,password)=>{
-    const r=await social.signIn(socialConfig(),email,password);
+    const r=await social.signIn(await socialConfig(),email,password);
     if(!r?.access_token || !r?.user?.id)throw Error('Sign in did not return a valid account. Verify your email.');
     saveSocialSession({access_token:r.access_token,refresh_token:r.refresh_token,user:r.user,expiresAt:Date.now()+r.expires_in*1000});
     return {id:r.user.id,email:r.user.email};
@@ -158,7 +164,7 @@ function register() {
     fs.writeFileSync(resolveFiles().settings,JSON.stringify(s,null,2),{mode:0o600});return true;
   });
   ipcMain.handle('social:status',async()=>{
-    const s=settings();if(!s.socialUrl||!s.socialAnonKey)return {configured:false,signedIn:false};
+    const s=settings();try{await socialConfig();}catch(err){return {configured:false,signedIn:false,error:err.message};}
     if(!s.socialSession)return {configured:true,signedIn:false};
     try {const {config,session}=await socialAuth();const data=await social.snapshot(config,session.access_token,session.user.id);return {...data,configured:true,signedIn:true,id:session.user.id,email:session.user.email};}
     catch(err){return {configured:true,signedIn:false,error:err.message};}
@@ -216,15 +222,15 @@ function register() {
   });
   ipcMain.handle('library:artworkData',(_e,id) => { const g=selectedGame(id);return g.art?artworkData(g.art,resolveFiles().artwork):null; });
   ipcMain.handle('catalog:list',async()=>{
-    const origin=catalogOrigin(settings().catalogUrl);
-    if(!origin)throw Error('Set REVIVE catalog API URL in Settings first.');
+    const origin=catalogOrigin(settings().catalogUrl||DEFAULT_ORIGIN);
+    if(!origin)throw Error('REVIVE cloud library is not reachable yet.');
     const response=await fetch(`${origin}/api/catalog`,{signal:AbortSignal.timeout(15000),redirect:'error'});
     const body=await response.json();if(!response.ok)throw Error(body.error||`Catalog HTTP ${response.status}`);
     return validateCatalogResponse(body);
   });
   ipcMain.handle('catalog:download',async(_event,id)=>{
     if(typeof id!=='string'||!/^[a-z0-9][a-z0-9-]{2,55}$/.test(id))throw Error('Invalid catalog game.');
-    const origin=catalogOrigin(settings().catalogUrl);if(!origin)throw Error('Connect a catalog in Settings.');
+    const origin=catalogOrigin(settings().catalogUrl||DEFAULT_ORIGIN);if(!origin)throw Error('REVIVE cloud library is not reachable yet.');
     const response=await fetch(`${origin}/api/catalog-download?id=${encodeURIComponent(id)}`,{signal:AbortSignal.timeout(15000),redirect:'error'});
     const item=await response.json();if(!response.ok)throw Error(item.error||`Catalog HTTP ${response.status}`);
     const validated=validateDownload(item,{allowSignedR2:true});
@@ -234,7 +240,7 @@ function register() {
     const jobId=crypto.randomUUID(),controller=new AbortController();activeDownloads.set(jobId,controller);
     const started=Date.now();let last=0;
     (async()=>{try{
-      const result=await verifiedDownload({...validated,signedR2:true},resolveFiles().downloads,{signal:controller.signal,maxBytes:512*1024**3,onProgress:p=>{
+      const result=await verifiedDownload({...validated,signedR2:true},resolveFiles().downloads,{signal:controller.signal,maxBytes:512*1024**3,resume:true,onProgress:p=>{
         const now=Date.now();if(now-last>180){last=now;stateEvent('download:changed',{id:jobId,status:'downloading',name:validated.fileName,...p,bytesPerSecond:Math.round(p.bytes/Math.max(1,(now-started)/1000))});}
       }});
       stateEvent('download:changed',{id:jobId,status:'complete',name:validated.fileName,cloudGame:id,...result});

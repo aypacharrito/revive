@@ -16,30 +16,49 @@ function validateDownload({url,sha256,fileName},{allowSignedR2=false}={}) {
   if(!/^[a-zA-Z0-9][a-zA-Z0-9_. ()-]{0,120}$/.test(fileName||'')||fileName==='.'||fileName==='..')throw Error('Choose a safe file name.');
   return {url:parsed.toString(),sha256:sha256.toLowerCase(),fileName};
 }
-async function verifiedDownload(params,folder,{signal,onProgress,request=fetch,maxBytes=MAX_BYTES}={}) {
+async function verifiedDownload(params,folder,{signal,onProgress,request=fetch,maxBytes=MAX_BYTES,resume=false}={}) {
   const job=validateDownload(params,{allowSignedR2:params?.signedR2===true});
+  const resumable=resume===true && params?.signedR2===true;
   fs.mkdirSync(folder,{recursive:true});
   const target=path.join(folder,job.fileName);
   if(fs.existsSync(target))throw Error('Destination already exists. Rename the file or move it first.');
-  const temp=path.join(folder,`.revive-${crypto.randomUUID()}.part`);
-  let total=0;
+  const temp=resumable ? path.join(folder,`.revive-${job.sha256.slice(0,18)}-${job.fileName}.part`) : path.join(folder,`.revive-${crypto.randomUUID()}.part`);
+  let keepPartial=false;
   try{
-    const response=await request(job.url,{signal,redirect:'error'});
+    let offset=resumable && fs.existsSync(temp)?fs.statSync(temp).size:0;
+    if(offset>maxBytes){fs.unlinkSync(temp);throw Error('Partial download exceeds allowed size.');}
+    const headers=offset?{Range:`bytes=${offset}-`}:{};
+    const response=await request(job.url,{signal,headers,redirect:'error'});
     if(!response.ok||!response.body)throw Error(`Download failed (HTTP ${response.status}).`);
+    if(response.status===206){
+      const range=response.headers.get('content-range')||'';
+      const match=/^bytes (\d+)-(\d+)\/(\d+)$/.exec(range);
+      if(!match || Number(match[1])!==offset || Number(match[3])>maxBytes)throw Error('Server returned an invalid range.');
+    }else if(response.status===200){
+      // Server ignored Range; discard earlier bytes and safely start again.
+      offset=0;
+    }else throw Error('Unexpected transfer response.');
     const declared=Number(response.headers.get('content-length')||0);
-    if(declared>maxBytes)throw Error('Download exceeds allowed size.');
+    if(declared+offset>maxBytes)throw Error('Download exceeds allowed size.');
     const hash=crypto.createHash('sha256');
-    const reader=Readable.fromWeb(response.body);
-    const transform=new Transform({transform(chunk,_encoding,callback){
+    if(offset){
+      for await(const chunk of fs.createReadStream(temp))hash.update(chunk);
+    }
+    let total=offset;
+    const stream=new Transform({transform(chunk,_encoding,callback){
       total+=chunk.length;
       if(total>maxBytes)return callback(Error('Download exceeds allowed size.'));
-      hash.update(chunk);onProgress?.({bytes:total,total:declared||null});callback(null,chunk);
+      hash.update(chunk);onProgress?.({bytes:total,total:declared?declared+offset:null,resumedBytes:offset});callback(null,chunk);
     }});
-    await pipeline(reader,transform,fs.createWriteStream(temp,{flags:'wx'}),{signal});
+    await pipeline(Readable.fromWeb(response.body),stream,fs.createWriteStream(temp,{flags:offset?'a':'w'}),{signal});
     const observed=hash.digest('hex');
     if(observed!==job.sha256)throw Error('SHA-256 mismatch: discarded the download.');
     fs.renameSync(temp,target);
-    return {file:target,bytes:total,sha256:observed};
-  }finally{try{fs.unlinkSync(temp)}catch{}}
+    return {file:target,bytes:total,sha256:observed,resumedBytes:offset};
+  }catch(e){
+    if(resumable && (e.name==='AbortError'||e.code==='ABORT_ERR'||e.code==='ECONNRESET'||e.code==='ETIMEDOUT'))keepPartial=true;
+    throw e;
+  }finally{if(!keepPartial){try{fs.unlinkSync(temp)}catch{}}}
 }
+
 module.exports={validateDownload,verifiedDownload,MAX_BYTES};
