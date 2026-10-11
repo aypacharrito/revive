@@ -25,8 +25,10 @@ export default async function handler(req,res) {
  if(req.method!=='GET'&&req.method!=='POST')return res.status(405).json({error:'GET or POST required'});
  res.setHeader('Cache-Control','no-store');
  try {
-  if(!process.env.UPSTASH_REDIS_REST_URL||!process.env.UPSTASH_REDIS_REST_TOKEN)throw Object.assign(Error('Presence service not connected'),{status:503});
-  const auth=await authorizedUser(req),redis=Redis.fromEnv();
+  const redisUrl=process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+  const redisToken=process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+  if(!redisUrl||!redisToken)throw Object.assign(Error('Presence service not connected'),{status:503});
+  const auth=await authorizedUser(req),redis=new Redis({url:redisUrl,token:redisToken});
   if(req.method==='POST') {
    await redis.set(presenceKey(auth.userId),{online:true}, {ex:PRESENCE_SECONDS});
    return res.status(200).json({ok:true,expiresIn:PRESENCE_SECONDS});

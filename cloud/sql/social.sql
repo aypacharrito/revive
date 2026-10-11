@@ -31,15 +31,15 @@ alter table public.profiles enable row level security;
 alter table public.friend_requests enable row level security;
 alter table public.messages enable row level security;
 create policy profiles_read on public.profiles for select to authenticated using (true);
-create policy profiles_update on public.profiles for update to authenticated using (id=auth.uid()) with check(id=auth.uid());
-create policy requests_read on public.friend_requests for select to authenticated using (sender_id=auth.uid() or recipient_id=auth.uid());
-create policy messages_read on public.messages for select to authenticated using (from_id=auth.uid() or to_id=auth.uid());
+create policy profiles_update on public.profiles for update to authenticated using (id=(select auth.uid())) with check(id=(select auth.uid()));
+create policy requests_read on public.friend_requests for select to authenticated using (sender_id=(select auth.uid()) or recipient_id=(select auth.uid()));
+create policy messages_read on public.messages for select to authenticated using (from_id=(select auth.uid()) or to_id=(select auth.uid()));
 create policy messages_send on public.messages for insert to authenticated with check (
-  from_id=auth.uid() and exists(
+  from_id=(select auth.uid()) and exists(
     select 1 from public.friend_requests f
     where f.status='accepted' and
-    ((f.sender_id=auth.uid() and f.recipient_id=to_id) or
-     (f.recipient_id=auth.uid() and f.sender_id=to_id))
+    ((f.sender_id=(select auth.uid()) and f.recipient_id=to_id) or
+     (f.recipient_id=(select auth.uid()) and f.sender_id=to_id))
   )
 );
 -- Keep mutation rights narrow. Profiles may update only the two user-editable fields.
@@ -68,8 +68,8 @@ begin
  if receiver is null then raise exception 'No player with that handle';end if;
  if receiver=auth.uid() then raise exception 'Cannot add yourself';end if;
  if exists (select 1 from public.friend_requests where
-   (sender_id=receiver and recipient_id=auth.uid()) or
-   (sender_id=auth.uid() and recipient_id=receiver)) then
+   (sender_id=receiver and recipient_id=(select auth.uid())) or
+   (sender_id=(select auth.uid()) and recipient_id=receiver)) then
    raise exception 'Friend request or friendship already exists';
  end if;
  insert into public.friend_requests(sender_id,recipient_id) values(auth.uid(),receiver);
@@ -78,11 +78,12 @@ create or replace function public.respond_friend_request(request_id uuid, accept
 language plpgsql security definer set search_path = '' as $$
 begin
  update public.friend_requests set status=case when accept then 'accepted' else 'declined' end
- where id=request_id and recipient_id=auth.uid() and status='pending';
+ where id=request_id and recipient_id=(select auth.uid()) and status='pending';
  if not found then raise exception 'Pending request not found';end if;
 end $$;
-revoke all on function public.send_friend_request(text) from public;
-revoke all on function public.respond_friend_request(uuid,boolean) from public;
+revoke all on function public.send_friend_request(text) from public, anon;
+revoke all on function public.respond_friend_request(uuid,boolean) from public, anon;
+revoke execute on function public.revive_new_user() from public, anon, authenticated;
 grant execute on function public.send_friend_request(text) to authenticated;
 grant execute on function public.respond_friend_request(uuid,boolean) to authenticated;
 -- Enable email verification, spam/rate limiting, and allowed email domains in Supabase Auth settings.

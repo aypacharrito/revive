@@ -18,3 +18,8 @@ test('presence is permitted only for accepted friends',()=>{
  const rows=[{sender_id:user,recipient_id:friend,status:'accepted'},{sender_id:stranger,recipient_id:user,status:'pending'}];
  assert.deepEqual(allowedFriends(rows,user,[friend,stranger]),[friend]);
 });
+
+test('Vercel KV Upstash integration variables are also detected',()=>{
+ const env={KV_REST_API_URL:'https://valid.example',KV_REST_API_TOKEN:'private'};
+ assert.equal(readiness(env).services.upstash,true);
+});

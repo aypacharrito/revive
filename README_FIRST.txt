@@ -1,1 +1,1 @@
-REVIVE v0.9: Double-click RUN_NOW.bat to import code into your existing GitHub Desktop Revive repository. See docs/INSTALLER_AND_DONATIONS.md for installer publishing and donation activation.
+REVIVE v1.0: RUN_NOW.bat imports source into GitHub Desktop. INSTALL_REVIVE_WINDOWS.bat builds and opens a Windows EXE installer on your PC. Read docs/SUPABASE_AND_INSTALLER.md. Supabase friends database and Vercel public environment variables were configured live.
