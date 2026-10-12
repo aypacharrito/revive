@@ -2,6 +2,6 @@ export function readiness(env = process.env) {
   const r2 = ['R2_ACCOUNT_ID','R2_ACCESS_KEY_ID','R2_SECRET_ACCESS_KEY','R2_BUCKET'].every(k => Boolean(env[k]));
   const upstash = Boolean(env.UPSTASH_REDIS_REST_URL||env.KV_REST_API_URL) && Boolean(env.UPSTASH_REDIS_REST_TOKEN||env.KV_REST_API_TOKEN);
   const supabase = ['SUPABASE_URL','SUPABASE_PUBLISHABLE_KEY'].every(k => Boolean(env[k]));
-  const ai = ['OPENAI_API_KEY','REVIVE_OWNER_TOKEN'].every(k => Boolean(env[k]));
-  return { name:'REVIVE cloud', ready:true, version:'1.2.0', services:{r2,upstash,supabase,ai}, explanation:'Connection variables detected only; availability and permissions have not been tested.' };
+  const ai = Boolean(env.OPENAI_API_KEY) && supabase && upstash;
+  return { name:'REVIVE cloud', ready:true, version:'1.4.0', services:{r2,upstash,supabase,ai}, explanation:'Connection variables detected only; availability and permissions have not been tested.' };
 }

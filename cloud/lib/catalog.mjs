@@ -19,4 +19,4 @@ export function validateListing(value) {
   if(objectKey!==`packages/${id}/${sha256}/${filename}`)throw Error('Package identity mismatch');
   return {id,title:title.trim(),description,version,filename,sha256,bytes,rights,rightsSource,objectKey,status};
 }
-export function publicListing(game){const x=validateListing(game);const {objectKey,rightsSource,...visible}=x;return {...visible,downloadPath:`/api/catalog-download?id=${encodeURIComponent(x.id)}`};}
+export function publicListing(game){if(game?.visibility==='friends'||/^f-[a-f0-9]{32}-/.test(game?.id||''))throw Error('Private packages cannot enter the public catalog');const x=validateListing(game);const {objectKey,rightsSource,...visible}=x;return {...visible,downloadPath:`/api/catalog-download?id=${encodeURIComponent(x.id)}`};}
